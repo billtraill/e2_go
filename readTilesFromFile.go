@@ -1,52 +1,59 @@
-package readTilesFromFile
+package main
 
-import  (
-	"os"
-	"fmt"
+import (
 	"bufio"
+	"fmt"
 	"log"
+	"os"
 	"strconv"
 	"strings"
 )
 
-
-func readTilesFromFile(fileName string) error {
-	var width, height int
+func readTilesFromFile(fileName string) (width int, height int, tiles []Tile, err error) {
 
 	file, err := os.Open(fileName)
 	if err != nil {
-	    log.Fatal(err)
+		log.Fatal(err)
 	}
 	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
 
 	first := true
-
-	for scanner.Scan()  {
-		result := strings.Fields(scanner.Text())
+	tileNumber := 1
+	for scanner.Scan() {
+		fields := strings.Fields(scanner.Text()) // split the line up into fields
 		if first {
 			first = false
-			width, err  = strconv.Atoi(result[0])
-			height, err = strconv.Atoi(result[1])
+			width, err = strconv.Atoi(fields[0])
+			height, err = strconv.Atoi(fields[1])
 			if err != nil {
-					return  err
+				return
 			}
-			fmt.Println(width,height)
+			fmt.Println(width, height)
+
 		} else {
-			e1,err := strconv.Atoi(result[0])
-			e2,err := strconv.Atoi(result[1])
-			e3,err := strconv.Atoi(result[2])
-			e4,err := strconv.Atoi(result[3])
-			if err != nil {
-					return  err
+			var newTile Tile
+			for i, v := range fields {
+				newTile.sides[i], err = strconv.Atoi(v)
+				if err != nil {
+					return
+				}
 			}
-			fmt.Println(e1,e2,e3,e4,e4)
+
+			newTile.tileNumber = tileNumber
+
+			//fmt.Println(newTile)
+			// TODO: tileType, edgePairs etc
+			newTile.setTileProperties()
+			tiles = append(tiles, newTile)
+			tileNumber++
 		}
 	}
 	if err := scanner.Err(); err != nil {
-	    log.Fatal(err)
+		log.Fatal(err)
 	}
-
-	return err
+	fmt.Println(tiles)
+	// TODO: check validity of tile set , no of tiles = width*height, no of sides are even etc....
+	return
 }
