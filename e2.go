@@ -6,6 +6,9 @@ import (
 )
 
 // eh
+var board Board
+var tileSet TileSet
+var highest_progress int
 
 func main() {
 
@@ -19,10 +22,22 @@ func main() {
 			if err != nil {
 				fmt.Println(err)
 			} else {
-				var tileSet TileSet
+
 				err := tileSet.setUpTileSet(width, height, tiles)
 				if err != nil {
 					fmt.Println(err)
+				} else {
+					// set up board
+
+					err := board.createBoard(tileSet)
+					if err != nil {
+						fmt.Println(err)
+					}
+					//fmt.Println(board)
+					//
+					highest_progress = 0
+					tiles[0].placeTileOnBoard(BoardPosition{0, 0}, 0, 1)
+					//fmt.Println(tiles)
 				}
 			}
 

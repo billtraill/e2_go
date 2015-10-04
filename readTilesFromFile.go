@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-func readTilesFromFile(fileName string) (width int, height int, tiles []Tile, err error) {
+func readTilesFromFile(fileName string) (width int, height int, tiles tileArray, err error) {
 
 	file, err := os.Open(fileName)
 	if err != nil {
@@ -34,8 +34,11 @@ func readTilesFromFile(fileName string) (width int, height int, tiles []Tile, er
 
 		} else {
 			var newTile Tile
+			newTilep := &newTile
 			for i, v := range fields {
-				newTile.sides[i], err = strconv.Atoi(v)
+				var s int
+				s, err = strconv.Atoi(v)   // convert to integer
+				newTile.sides[i] = side(s) // Make side typesafe
 				if err != nil {
 					return
 				}
@@ -46,7 +49,7 @@ func readTilesFromFile(fileName string) (width int, height int, tiles []Tile, er
 			//fmt.Println(newTile)
 			// TODO: tileType, edgePairs etc
 			newTile.setTileProperties()
-			tiles = append(tiles, newTile)
+			tiles = append(tiles, newTilep)
 			tileNumber++
 		}
 	}
@@ -54,6 +57,9 @@ func readTilesFromFile(fileName string) (width int, height int, tiles []Tile, er
 		log.Fatal(err)
 	}
 	fmt.Println(tiles)
-	// TODO: check validity of tile set , no of tiles = width*height, no of sides are even etc....
+	//for _, v := range tiles {
+	//	fmt.Println(v)
+	//}
+
 	return
 }
