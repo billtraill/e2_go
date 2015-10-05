@@ -14,15 +14,13 @@ type tileArray []*Tile
 // gets initialised once and no further changes done to it.
 type Tile struct {
 	// Static attributes
-	tileNumber int // the order the tile was read from the file, starting at 1
-	sides      [4]side
-	// rotations  [4]int
+	tileNumber    int                  // the order the tile was read from the file, starting at 1
+	sides         [4]side              // values of each of the sides. Used when calculating Edge pairs
 	tileType      byte                 // E is edge, C is corner, N is normal
 	edgePairs     [4]edgePairID        // Four edge pairs, adjacent edges
 	edgePairLists [4]*tileEdgePairList // note order of list implies the rotation of the tile from its normalised positon
 	// dynamic values .... these get changed as we run ....
 	positionInEdgePairList [4]int // this tracks where the tile is currently in the edgePairLists - this changes as we remove/add tiles to lists
-
 }
 
 func tileTypeDescription(t byte) string {
@@ -189,6 +187,12 @@ func clearReserveAcrossPosition(pos BoardPosition) {
 	return
 }
 
+//
+// placeTileOnBoard is the main solver function. It recursively places tiles down on the board
+// checking ahead to see if valid solutions are still possible from the remaining tiles
+// the main datastructure used is the edgePairLists, each tile has 4 associated lists, one for
+// each of its rotations. Each edgepair has a list of all the tile that have this combination of
+// edges.
 func (tile *Tile) placeTileOnBoard(pos BoardPosition, rotation int, progress int) bool {
 
 	//fmt.Println("Placing tile:", tile.tileNumber, "at position:", pos, "rotation:", rotation)
