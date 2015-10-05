@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"time"
 )
 
 type edgePairID int
@@ -233,13 +234,12 @@ func (tile *Tile) placeTileOnBoard(pos BoardPosition, rotation int, progress int
 			nextPos := board.nextPosition(pos)
 			//fmt.Println("Next Position:", nextPos)
 			// set the edgePairIDs of the adjacent tiles
-			//edgePairID := board.getEdgePairIDForLocation(nextPos)
-			//edgePairID := board.loc[nextPos.y][nextPos.x].edgePair // we precalculated this earlier !
+
 			//fmt.Println("Next edgePairID:", edgePairDescription(edgePairID))
-			if progress > highest_progress {
+			if progress >= highest_progress {
 				fmt.Println(board)
 				highest_progress = progress
-				fmt.Println("Placed:", progress)
+				fmt.Println("Placed:", progress, time.Now().Format(time.RFC850))
 				if progress == (board.width * board.height) {
 					fmt.Println(board)
 					log.Fatalln("finished solution ") // TODO Print out proper solution
@@ -247,14 +247,8 @@ func (tile *Tile) placeTileOnBoard(pos BoardPosition, rotation int, progress int
 				}
 			}
 
-			//os.Stdout.Sync()
-			//positionType := board.loc[nextPos.y][nextPos.x].positionType
-			//var ok bool
-			//var edgePairList *tileEdgePairList
 			edgePairList := board.loc[nextPos.y][nextPos.x].edgePairList
 
-			//fmt.Println("Iterating over the following edgePairlist")
-			//fmt.Println(edgePairList)
 			// Iterates over all the tiles in the list...
 			for i := 0; i < edgePairList.availableNoTiles; i++ {
 				nexTtile := edgePairList.tiles[i].tile
@@ -279,6 +273,6 @@ func (tile *Tile) placeTileOnBoard(pos BoardPosition, rotation int, progress int
 	//fmt.Println(tileSet.edgeTilesEdgePairsMap)
 	//fmt.Println(tileSet.normalTilesEdgePairsMap)
 	tile.restoreTileToEdgePairLists()
-	//fmt.Println("Backtracking")
+
 	return false
 }
