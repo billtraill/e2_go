@@ -130,43 +130,6 @@ func (tile *Tile) setTileProperties() {
 	tile.setEdgePairs()
 }
 
-func (tile *Tile) removeTileFromEdgePairLists() {
-	//fmt.Println("removeTileFromEdgePairLists before", tile)
-
-	for r := 0; r < 4; r++ {
-		edgePairList := tile.edgePairLists[r]
-		//fmt.Println("Removing from list associated with index/rotation  :", r, edgePairList)
-		p := tile.positionInEdgePairList[r]
-		edgePairList.removeTile(p)
-		//edgePairList.removeChan <- p // sent the position we are removing !
-		//fmt.Println("**Removing from list associated with index/rotation:", r, edgePairList)
-	}
-	// wait until we get 4 responses
-	//<-tileSet.responseChan
-	//<-tileSet.responseChan
-	//<-tileSet.responseChan
-	//<-tileSet.responseChan
-	//fmt.Println("removeTileFromEdgePairLists before", tile)
-}
-
-func (tile *Tile) restoreTileToEdgePairLists() {
-	//fmt.Println("restoreTileToEdgePairLists before:", tile)
-
-	for r := 3; r >= 0; r-- {
-		edgePairList := tile.edgePairLists[r]
-		// p := tile.positionInEdgePairList[r] // TODO  check if this is the right position
-		//fmt.Println("Restoring to list associated with index/rotation   :", r, edgePairList)
-		edgePairList.restoreTile()
-		//edgePairList.restoreChan <- 1 // give it a value to indicate to restore an entry in its list
-		//fmt.Println("**Restoring to list associated with index/rotation :", r, edgePairList)
-	}
-	//fmt.Println("restoreTileToEdgePairLists after:", tile)
-	//<-tileSet.responseChan
-	//<-tileSet.responseChan
-	//<-tileSet.responseChan
-	//<-tileSet.responseChan
-}
-
 //
 // This does a quick check to see if valid edgePairs are in the adjacent locations
 // and if they are check if there are any tiles available in thoes lists and if they
@@ -230,7 +193,10 @@ func (tile *Tile) placeTileOnBoard(pos BoardPosition, rotation int, progress int
 
 	//fmt.Println("Placing tile:", tile.tileNumber, "at position:", pos, "rotation:", rotation)
 	// remove the tile from the lists
-	tile.removeTileFromEdgePairLists()
+	tile.edgePairLists[0].removeTile(tile.positionInEdgePairList[0])
+	tile.edgePairLists[1].removeTile(tile.positionInEdgePairList[1])
+	tile.edgePairLists[2].removeTile(tile.positionInEdgePairList[2])
+	tile.edgePairLists[3].removeTile(tile.positionInEdgePairList[3])
 	//fmt.Println(tileSet.cornerTilesEdgePairsMap)
 	//fmt.Println(tileSet.edgeTilesEdgePairsMap)
 	//fmt.Println(tileSet.normalTilesEdgePairsMap)
@@ -282,7 +248,10 @@ func (tile *Tile) placeTileOnBoard(pos BoardPosition, rotation int, progress int
 	//fmt.Println(tileSet.cornerTilesEdgePairsMap)
 	//fmt.Println(tileSet.edgeTilesEdgePairsMap)
 	//fmt.Println(tileSet.normalTilesEdgePairsMap)
-	tile.restoreTileToEdgePairLists()
 
+	tile.edgePairLists[3].restoreTile()
+	tile.edgePairLists[2].restoreTile()
+	tile.edgePairLists[1].restoreTile()
+	tile.edgePairLists[0].restoreTile()
 	return false
 }
