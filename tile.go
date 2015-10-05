@@ -197,9 +197,6 @@ func (tile *Tile) placeTileOnBoard(pos BoardPosition, rotation int, progress int
 	tile.edgePairLists[1].removeTile(tile.positionInEdgePairList[1])
 	tile.edgePairLists[2].removeTile(tile.positionInEdgePairList[2])
 	tile.edgePairLists[3].removeTile(tile.positionInEdgePairList[3])
-	//fmt.Println(tileSet.cornerTilesEdgePairsMap)
-	//fmt.Println(tileSet.edgeTilesEdgePairsMap)
-	//fmt.Println(tileSet.normalTilesEdgePairsMap)
 
 	// place tile on the board
 	board.placeTile(tile, rotation, pos)
@@ -207,9 +204,9 @@ func (tile *Tile) placeTileOnBoard(pos BoardPosition, rotation int, progress int
 		if reserveAcrossPosition(pos) {
 
 			// get next location to move to
-			nextPos := board.nextPosition(pos)
+			//nextPos := board.nextPosition(pos)
+			nextPos := board.loc[pos.y][pos.x].traverseNext
 			//fmt.Println("Next Position:", nextPos)
-			// set the edgePairIDs of the adjacent tiles
 
 			//fmt.Println("Next edgePairID:", edgePairDescription(edgePairID))
 			if progress >= highest_progress {
