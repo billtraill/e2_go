@@ -9,7 +9,9 @@ type BoardLocation struct {
 	rotation     int   // current rotation of tile piece. Note corners and edge pieces have static rotations!
 	positionType byte  //
 	edgePairMap  tileEdgePairMap
-	edgePair     edgePairID // the edgepair this location could take -
+	//edgePair     edgePairID // the edgepair this location could take -
+	edgePairList *tileEdgePairList
+	traverseNext BoardPosition
 }
 
 // Board : holds the description of the board and any tiles that may currently be placed apon it
@@ -24,14 +26,76 @@ type BoardPosition struct {
 }
 
 func (board Board) nextPosition(pos BoardPosition) BoardPosition {
-	pos.x++
-	if pos.x >= board.width {
-		pos.x = 0
-		pos.y++
-	}
-	return pos
+	return board.loc[pos.y][pos.x].traverseNext
+	/*	pos.x++
+		if pos.x >= board.width {
+			pos.x = 0
+			pos.y++
+		}
+		return pos */
 }
 
+func (board Board) setTraversal() {
+	xp, yp := 0, 0
+	x, y := 0, 1
+	minY := 0
+	maxY := board.height - 1
+	minX := 0
+	maxX := board.width - 1
+
+	for {
+		fmt.Println(x, y)
+		board.loc[yp][xp].traverseNext = BoardPosition{x, y}
+		xp, yp = x, y
+		if x == board.width-1 && y == board.height-1 {
+			// board.loc[yp][xp].traverseNext = BoardPosition{-1, -1}
+			break
+		}
+		y--
+		if y < minY {
+			y = x + 1
+			if y > maxY {
+				y = maxY
+				minX++
+			}
+			x = minX
+		} else {
+			x++
+			if x > maxX {
+				y = x + 1
+				if y > maxY {
+					y = maxY
+					minX++
+				}
+				x = minX
+			}
+		}
+
+	}
+
+	return
+
+}
+
+/*
+func (board Board) nextPositionDiagonal(pos BoardPosition) BoardPosition {
+	pos.y--
+	if y < 0 {
+		pos.y = pos.x + 1
+		if pos.y == board.height {
+			pos.y = board.height - 1
+
+		} else {
+			pos.x = 0
+		}
+
+	} else {
+		pos.x = pos.x + 1
+	}
+
+	return pos
+}
+*/
 func boardLocationTypeDescription(t byte) string {
 	var desc string
 	switch t {
@@ -120,6 +184,12 @@ func (board *Board) createBoard(tileSet TileSet) error {
 				loc.positionType = 'C'
 				loc.rotation = 0
 				loc.edgePairMap = tileSet.cornerTilesEdgePairsMap
+				//loc.edgePair = calcEdgePairID(0, 0) //can be deleted
+				//
+				// This is required to place 1st tile in top corner
+				//
+				loc.edgePairList = loc.edgePairMap[calcEdgePairID(0, 0)]
+				loc.edgePairList.needCount++
 			} else if x == 0 && y == tileSet.height-1 { // bottom right
 				loc.positionType = 'C'
 				loc.rotation = 3
@@ -155,6 +225,7 @@ func (board *Board) createBoard(tileSet TileSet) error {
 			}
 		}
 	}
+	board.setTraversal()
 	return nil
 }
 

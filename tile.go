@@ -156,6 +156,65 @@ func (tile *Tile) restoreTileToEdgePairLists() {
 
 }
 
+//
+// This does a quick check to see if valid edgePairs are in the adjacent locations
+// and if they are check if there are any tiles available in thoes lists and if they
+// are do a preallocation by incrementing their need count.
+// This ensures we detect that we have not created impossible edge constraint as early as possible
+//
+func reserveDownPosition(pos BoardPosition) bool {
+	var edgePairList *tileEdgePairList
+
+	var ok bool
+	if pos.y+1 < board.height {
+		edgePairID := board.getEdgePairIDForLocation(BoardPosition{pos.x, pos.y + 1})
+		edgePairList, ok = board.loc[pos.y+1][pos.x].edgePairMap[edgePairID]
+		if !ok {
+			return false
+		}
+
+		if edgePairList.needCount >= edgePairList.availableNoTiles {
+			return false
+		}
+		board.loc[pos.y+1][pos.x].edgePairList = edgePairList
+		edgePairList.needCount++
+	}
+	return true
+}
+func clearReserveDownPosition(pos BoardPosition) {
+	if pos.y+1 < board.height {
+		board.loc[pos.y+1][pos.x].edgePairList.needCount--
+		board.loc[pos.y+1][pos.x].edgePairList = nil // not nessary but should catch any bugs!
+	}
+	return
+}
+
+func reserveAcrossPosition(pos BoardPosition) bool {
+	var edgePairList *tileEdgePairList
+	var ok bool
+	if pos.y == 0 && pos.x+1 < board.width {
+		edgePairID := board.getEdgePairIDForLocation(BoardPosition{pos.x + 1, pos.y})
+		edgePairList, ok = board.loc[pos.y][pos.x+1].edgePairMap[edgePairID]
+		if !ok {
+			return false
+		}
+
+		if edgePairList.needCount >= edgePairList.availableNoTiles {
+			return false
+		}
+		board.loc[pos.y][pos.x+1].edgePairList = edgePairList
+		edgePairList.needCount++
+	}
+	return true
+}
+func clearReserveAcrossPosition(pos BoardPosition) {
+	if pos.y == 0 && pos.x+1 < board.width {
+		board.loc[pos.y][pos.x+1].edgePairList.needCount--
+		board.loc[pos.y][pos.x+1].edgePairList = nil // not nessary but should catch any bugs!
+	}
+	return
+}
+
 func (tile *Tile) placeTileOnBoard(pos BoardPosition, rotation int, progress int) bool {
 
 	//fmt.Println("Placing tile:", tile.tileNumber, "at position:", pos, "rotation:", rotation)
@@ -167,53 +226,47 @@ func (tile *Tile) placeTileOnBoard(pos BoardPosition, rotation int, progress int
 
 	// place tile on the board
 	board.placeTile(tile, rotation, pos)
-
-	if progress == (board.width * board.height) {
-		fmt.Println(board)
-		log.Fatalln("finished solution ") // TODO Print out proper solution
-		return true
-	}
-	// get next location to move to
-
-	nextPos := board.nextPosition(pos)
-	//fmt.Println("Next Position:", nextPos)
-	// set the edgePairIDs of the adjacent tiles
-	edgePairID := board.getEdgePairIDForLocation(nextPos)
-	//fmt.Println("Next edgePairID:", edgePairDescription(edgePairID))
-	if progress > highest_progress {
-		fmt.Println(board)
-		highest_progress = progress
-	}
-
-	//os.Stdout.Sync()
-	//positionType := board.loc[nextPos.y][nextPos.x].positionType
-	var ok bool
-	var edgePairList *tileEdgePairList
-	edgePairList, ok = board.loc[nextPos.y][nextPos.x].edgePairMap[edgePairID]
-	/*
-		if positionType == 'C' {
-			edgePairList, ok = tileSet.cornerTilesEdgePairsMap[edgePairID]
-		} else if positionType == 'E' {
-			edgePairList, ok = tileSet.edgeTilesEdgePairsMap[edgePairID]
-		} else {
-			edgePairList, ok = tileSet.normalTilesEdgePairsMap[edgePairID]
-		}
-	*/
-	if ok {
-		//fmt.Println("Iterating over the following edgePairlist")
-		//fmt.Println(edgePairList)
-		for i := 0; i < edgePairList.availableNoTiles; i++ {
-			nexTtile := edgePairList.tiles[i].tile
-			nexTtilerotation := edgePairList.tiles[i].rotation
-			// Travers to next position on board
-			finished := nexTtile.placeTileOnBoard(nextPos, nexTtilerotation, progress+1)
-			if finished {
+	if reserveDownPosition(pos) {
+		if reserveAcrossPosition(pos) {
+			if progress == (board.width * board.height) {
+				fmt.Println(board)
+				log.Fatalln("finished solution ") // TODO Print out proper solution
 				return true
 			}
+			// get next location to move to
+			nextPos := board.nextPosition(pos)
+			//fmt.Println("Next Position:", nextPos)
+			// set the edgePairIDs of the adjacent tiles
+			//edgePairID := board.getEdgePairIDForLocation(nextPos)
+			//edgePairID := board.loc[nextPos.y][nextPos.x].edgePair // we precalculated this earlier !
+			//fmt.Println("Next edgePairID:", edgePairDescription(edgePairID))
+			if progress > highest_progress {
+				fmt.Println(board)
+				highest_progress = progress
+			}
+
+			//os.Stdout.Sync()
+			//positionType := board.loc[nextPos.y][nextPos.x].positionType
+			//var ok bool
+			//var edgePairList *tileEdgePairList
+			edgePairList := board.loc[nextPos.y][nextPos.x].edgePairList
+
+			//fmt.Println("Iterating over the following edgePairlist")
+			//fmt.Println(edgePairList)
+			for i := 0; i < edgePairList.availableNoTiles; i++ {
+				nexTtile := edgePairList.tiles[i].tile
+				nexTtilerotation := edgePairList.tiles[i].rotation
+				// Travers to next position on board
+				finished := nexTtile.placeTileOnBoard(nextPos, nexTtilerotation, progress+1)
+				if finished {
+					return true
+				}
+			}
+			clearReserveAcrossPosition(pos)
 		}
-	} else {
-		//fmt.Println("Unable to find list for edgePairID", edgePairDescription(edgePairID), "Position:", nextPos)
+		clearReserveDownPosition(pos)
 	}
+
 	// remove from board
 	//fmt.Println("removeTile :", tile.tileNumber, "Pos:", pos)
 	board.removeTile(tile, rotation, pos)

@@ -13,6 +13,7 @@ type tileEdgePairList struct { // equiv to EPListType
 	tiles            [maxEdgePairListSize]*tileAndRotation // pointer to current tile at
 	noTiles          int
 	availableNoTiles int
+	needCount        int
 	edgePairID       edgePairID
 	tileType         byte
 }
