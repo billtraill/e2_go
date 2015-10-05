@@ -240,12 +240,7 @@ func (tile *Tile) placeTileOnBoard(pos BoardPosition, rotation int, progress int
 	// remove from board
 	//fmt.Println("removeTile :", tile.tileNumber, "Pos:", pos)
 	board.removeTile(tile, rotation, pos)
-	// restore
-	//fmt.Println("restoreTileToAvailableLists :", tile.tileNumber)
-	//fmt.Println(tileSet.cornerTilesEdgePairsMap)
-	//fmt.Println(tileSet.edgeTilesEdgePairsMap)
-	//fmt.Println(tileSet.normalTilesEdgePairsMap)
-
+	// restore tile to its edge pair lists
 	tile.edgePairLists[3].restoreTile()
 	tile.edgePairLists[2].restoreTile()
 	tile.edgePairLists[1].restoreTile()
