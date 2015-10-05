@@ -228,11 +228,7 @@ func (tile *Tile) placeTileOnBoard(pos BoardPosition, rotation int, progress int
 	board.placeTile(tile, rotation, pos)
 	if reserveDownPosition(pos) {
 		if reserveAcrossPosition(pos) {
-			if progress == (board.width * board.height) {
-				fmt.Println(board)
-				log.Fatalln("finished solution ") // TODO Print out proper solution
-				return true
-			}
+
 			// get next location to move to
 			nextPos := board.nextPosition(pos)
 			//fmt.Println("Next Position:", nextPos)
@@ -244,6 +240,11 @@ func (tile *Tile) placeTileOnBoard(pos BoardPosition, rotation int, progress int
 				fmt.Println(board)
 				highest_progress = progress
 				fmt.Println("Placed:", progress)
+				if progress == (board.width * board.height) {
+					fmt.Println(board)
+					log.Fatalln("finished solution ") // TODO Print out proper solution
+					return true
+				}
 			}
 
 			//os.Stdout.Sync()
@@ -254,6 +255,7 @@ func (tile *Tile) placeTileOnBoard(pos BoardPosition, rotation int, progress int
 
 			//fmt.Println("Iterating over the following edgePairlist")
 			//fmt.Println(edgePairList)
+			// Iterates over all the tiles in the list...
 			for i := 0; i < edgePairList.availableNoTiles; i++ {
 				nexTtile := edgePairList.tiles[i].tile
 				nexTtilerotation := edgePairList.tiles[i].rotation
