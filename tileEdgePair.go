@@ -10,12 +10,12 @@ const maxEdgePairListSize = 20 // Probably only 17
 
 // tileEdgePairList an list that refers to each tile with a given edgePairID
 type tileEdgePairList struct { // equiv to EPListType
-	tiles            [maxEdgePairListSize]*tileAndRotation // pointer to current tile at
-	noTiles          int
-	availableNoTiles int
-	needCount        int
-	edgePairID       edgePairID
-	tileType         byte
+	tiles              [maxEdgePairListSize]*tileAndRotation // pointer to current tile at
+	totalNoTilesInList int                                   // for information only - used in construction of lists, not really used operationaly!
+	availableNoTiles   int                                   // the number of tiles in the list available to be placed.
+	needCount          int                                   // as we reserve elements on lookahead this is incremented, it cannot be bigger than availableNoTiles
+	edgePairID         edgePairID
+	tileType           byte
 }
 type tileAndRotation struct {
 	tile                            *Tile
@@ -54,7 +54,7 @@ func (edgePairList *tileEdgePairList) String() string {
 	}
 	s = s + ")  **  "
 	//
-	for i := edgePairList.availableNoTiles; i < edgePairList.noTiles; i++ {
+	for i := edgePairList.availableNoTiles; i < edgePairList.totalNoTilesInList; i++ {
 		s = s + fmt.Sprintf("t%v r%v [pp%v],", edgePairList.tiles[i].tile.tileNumber, edgePairList.tiles[i].rotation, edgePairList.tiles[i].previousPosition)
 	}
 	return s
@@ -71,14 +71,14 @@ func (edgePairList *tileEdgePairList) addTile(tile *Tile, tileRotation int) {
 	//tileAndRotation.previousPosition = -1   // only used for debugging when printing out info
 	tileAndRotation.rotation = tileRotation // (4 - tileRotation) % 4
 
-	edgePairList.tiles[edgePairList.noTiles] = &tileAndRotation
+	edgePairList.tiles[edgePairList.totalNoTilesInList] = &tileAndRotation
 	// Each tile tracks which edgePairList it is in and also its position in that list
 	// so that when a tile is placed it can remove itself from those available in the list
 	tile.edgePairLists[tileRotation] = edgePairList
-	tile.positionInEdgePairList[tileRotation] = edgePairList.noTiles
+	tile.positionInEdgePairList[tileRotation] = edgePairList.totalNoTilesInList
 
-	edgePairList.noTiles++
-	edgePairList.availableNoTiles = edgePairList.noTiles
+	edgePairList.totalNoTilesInList++
+	edgePairList.availableNoTiles = edgePairList.totalNoTilesInList
 }
 
 func (edgePairList *tileEdgePairList) removeTile(positionInList int, rotation int) {

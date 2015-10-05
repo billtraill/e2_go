@@ -243,6 +243,7 @@ func (tile *Tile) placeTileOnBoard(pos BoardPosition, rotation int, progress int
 			if progress > highest_progress {
 				fmt.Println(board)
 				highest_progress = progress
+				fmt.Println("Placed:", progress)
 			}
 
 			//os.Stdout.Sync()
