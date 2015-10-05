@@ -18,7 +18,7 @@ type TileSet struct {
 	cornerTilesEdgePairsMap tileEdgePairMap
 	edgeTilesEdgePairsMap   tileEdgePairMap
 	normalTilesEdgePairsMap tileEdgePairMap
-	responseChan            chan int // used to respond to completion notices....
+	//responseChan            chan int // used to respond to completion notices....
 }
 
 // setUpTileSet takes width and height of a board and a set of tiles to cover the board and populates
@@ -49,17 +49,17 @@ func (tileSet *TileSet) setUpTileSet(width int, height int, tiles tileArray) (er
 	if err != nil {
 		return err
 	}
-	tileSet.responseChan = make(chan int, 4) // we expect only 4 responses at a time (1 for each edgepair list)
+	//tileSet.responseChan = make(chan int, 4) // we expect only 4 responses at a time (1 for each edgepair list)
 	// Setup edgePairsmaps
 	//tileSet.tilesEdgePairMap = createEdgePairLists(tileSet.allTiles)
 	//fmt.Println(tileSet.tilesEdgePairMap)
-	tileSet.cornerTilesEdgePairsMap = createEdgePairLists(tileSet.cornerTiles, 'C', tileSet.responseChan)
+	tileSet.cornerTilesEdgePairsMap = createEdgePairLists(tileSet.cornerTiles, 'C')
 	//fmt.Println("Corner list:")
 	//fmt.Println(tileSet.cornerTilesEdgePairsMap)
-	tileSet.edgeTilesEdgePairsMap = createEdgePairLists(tileSet.edgeTiles, 'E', tileSet.responseChan)
+	tileSet.edgeTilesEdgePairsMap = createEdgePairLists(tileSet.edgeTiles, 'E')
 	//fmt.Println("Edge list:")
 	//fmt.Println(tileSet.edgeTilesEdgePairsMap)
-	tileSet.normalTilesEdgePairsMap = createEdgePairLists(tileSet.normalTiles, 'N', tileSet.responseChan)
+	tileSet.normalTilesEdgePairsMap = createEdgePairLists(tileSet.normalTiles, 'N')
 	//fmt.Println("Normal list:")
 	//fmt.Println(tileSet.normalTilesEdgePairsMap)
 	//fmt.Println(tiles)
