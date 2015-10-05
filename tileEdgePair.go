@@ -85,9 +85,6 @@ func (edgePairList *tileEdgePairList) addTile(tile *Tile, tileRotation int) {
 }
 
 func (edgePairList *tileEdgePairList) removeTile(positionInList int) {
-	//var positionInList int
-	//for {
-	//	positionInList = <-edgePairList.removeChan // wait for remove request,
 
 	tileToRemove := edgePairList.tiles[positionInList]
 	//fmt.Println("removeTile:removing tile no:", tileToRemove.tile.tileNumber, " in position:", positionInList, "from list:", edgePairList)
@@ -104,24 +101,17 @@ func (edgePairList *tileEdgePairList) removeTile(positionInList int) {
 	edgePairList.tiles[positionInList] = swapTile
 	swapTile.tile.positionInEdgePairList[swapTile.tilepositionInEdgePairListIndex] = positionInList // note if we do this after next line it breaks if this is last element in list!
 	//tileToRemove.tile.positionInEdgePairList[rotation] = -1                                         // this is just for debug purposes. We don;t really care about its position when its been 'removed'
-	//fmt.Println("removeTile:*removed tile state:", tileToRemove.tile)
+
 	// decrement the number of tiles available in the list
 	edgePairList.availableNoTiles--
 
-	//edgePairList.responseChan <- 1 // idicate we've finished.
-
-	//fmt.Println("removeTile: swapped tile after position in list amended :", swapTile.tile)
-	//fmt.Println("removeTile: list after removal:", edgePairList)
-	//fmt.Println("removeTile: removed tile state:", tileToRemove.tile)
-	//}
 }
 
 // restoreTile resores the last removed tile from the list
 // it is located one after the end of the list
 //
 func (edgePairList *tileEdgePairList) restoreTile() {
-	//for {
-	//	<-edgePairList.restoreChan // wait for restore request
+
 	// get the  tile at one behond the "end of the list" that is going to be restored
 	tileToRestore := edgePairList.tiles[edgePairList.availableNoTiles]
 	// get previous position of that tile
@@ -136,8 +126,7 @@ func (edgePairList *tileEdgePairList) restoreTile() {
 	tileToRestore.tile.positionInEdgePairList[tileToRestore.tilepositionInEdgePairListIndex] = positionToRestoreTo
 
 	edgePairList.availableNoTiles++
-	//edgePairList.responseChan <- 1 // notifiy that we've completed !
-	//}
+
 }
 
 func createEdgePairLists(tiles tileArray, tileType byte) tileEdgePairMap {
