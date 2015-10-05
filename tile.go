@@ -137,9 +137,15 @@ func (tile *Tile) removeTileFromEdgePairLists() {
 		edgePairList := tile.edgePairLists[r]
 		//fmt.Println("Removing from list associated with index/rotation  :", r, edgePairList)
 		p := tile.positionInEdgePairList[r]
-		edgePairList.removeTile(p, r)
+		//edgePairList.removeTile(p)
+		edgePairList.removeChan <- p // sent the position we are removing !
 		//fmt.Println("**Removing from list associated with index/rotation:", r, edgePairList)
 	}
+	// wait until we get 4 responses
+	<-tileSet.responseChan
+	<-tileSet.responseChan
+	<-tileSet.responseChan
+	<-tileSet.responseChan
 	//fmt.Println("removeTileFromEdgePairLists before", tile)
 }
 
@@ -150,11 +156,15 @@ func (tile *Tile) restoreTileToEdgePairLists() {
 		edgePairList := tile.edgePairLists[r]
 		// p := tile.positionInEdgePairList[r] // TODO  check if this is the right position
 		//fmt.Println("Restoring to list associated with index/rotation   :", r, edgePairList)
-		edgePairList.restoreTile()
+		//edgePairList.restoreTile()
+		edgePairList.restoreChan <- 1 // give it a value to indicate to restore an entry in its list
 		//fmt.Println("**Restoring to list associated with index/rotation :", r, edgePairList)
 	}
 	//fmt.Println("restoreTileToEdgePairLists after:", tile)
-
+	<-tileSet.responseChan
+	<-tileSet.responseChan
+	<-tileSet.responseChan
+	<-tileSet.responseChan
 }
 
 //
