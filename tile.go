@@ -241,7 +241,7 @@ func (tile *Tile) placeTileOnBoard(loc *BoardLocation, progress int) bool {
 				}
 			}
 
-			edgePairList := board.loc[nextPos.y][nextPos.x].edgePairList
+			edgePairList := nextPos.edgePairList
 
 			// Iterates over all the tiles in the list...
 			for i := 0; i < edgePairList.availableNoTiles; i++ {

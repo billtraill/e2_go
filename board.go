@@ -23,19 +23,6 @@ type Board struct {
 	width, height int
 }
 
-// BoardPosition refers to a position on the board.
-type BoardPosition struct {
-	x, y int
-}
-
-/*
-// nextPosition returns the next position on the board to solve.
-func (board Board) nextPosition(pos BoardPosition) BoardPosition {
-	return board.loc[pos.y][pos.x].traverseNext
-
-}
-*/
-
 // boardLocationTypeDescription for a given position type returns a string "describing" that position.
 func boardLocationTypeDescription(t byte) string {
 	var desc string
