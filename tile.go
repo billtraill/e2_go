@@ -230,22 +230,11 @@ func (tile *Tile) placeTileOnBoard(loc *BoardLocation, progress int) bool {
 
 	//fmt.Println("Placing tile:", tile.tileNumber, "at position:", loc.x, loc.y, "rotation:", tile.rotation)
 	// remove the tile from the lists
-	if tile.duplicateEdgePairs {
-		tile.edgePairLists[0].removeTile(tile.positionInEdgePairList[0])
-		tile.edgePairLists[1].removeTile(tile.positionInEdgePairList[1])
-		tile.edgePairLists[2].removeTile(tile.positionInEdgePairList[2])
-		tile.edgePairLists[3].removeTile(tile.positionInEdgePairList[3])
-	} else {
 
-		go tile.edgePairLists[0].goRemoveTile(tile.positionInEdgePairList[0])
-		go tile.edgePairLists[1].goRemoveTile(tile.positionInEdgePairList[1])
-		go tile.edgePairLists[2].goRemoveTile(tile.positionInEdgePairList[2])
-		go tile.edgePairLists[3].goRemoveTile(tile.positionInEdgePairList[3])
-		<-complete
-		<-complete
-		<-complete
-		<-complete
-	}
+	tile.edgePairLists[0].removeTile(tile.positionInEdgePairList[0])
+	tile.edgePairLists[1].removeTile(tile.positionInEdgePairList[1])
+	tile.edgePairLists[2].removeTile(tile.positionInEdgePairList[2])
+	tile.edgePairLists[3].removeTile(tile.positionInEdgePairList[3])
 
 	// place tile on the board
 	loc.tile = tile
@@ -297,22 +286,11 @@ func (tile *Tile) placeTileOnBoard(loc *BoardLocation, progress int) bool {
 	//board.loc[pos.y][pos.x].tile = nil
 	// restore tile to its edge pair lists, has to be done in the reverse they were added
 	// to deal with the fact that some times have the same edge pair list more than once !
-	if tile.duplicateEdgePairs {
-		tile.edgePairLists[3].restoreTile()
-		tile.edgePairLists[2].restoreTile()
-		tile.edgePairLists[1].restoreTile()
-		tile.edgePairLists[0].restoreTile()
-	} else {
 
-		go tile.edgePairLists[3].goRestoreTile()
-		go tile.edgePairLists[2].goRestoreTile()
-		go tile.edgePairLists[1].goRestoreTile()
-		go tile.edgePairLists[0].goRestoreTile()
-		<-complete
-		<-complete
-		<-complete
-		<-complete
-	}
+	tile.edgePairLists[3].restoreTile()
+	tile.edgePairLists[2].restoreTile()
+	tile.edgePairLists[1].restoreTile()
+	tile.edgePairLists[0].restoreTile()
 
 	return false
 }
