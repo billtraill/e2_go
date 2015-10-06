@@ -37,7 +37,14 @@ func main() {
 					//
 					highestProgress = 0
 					tiles[0].rotation = 0
-					tiles[0].placeTileOnBoard(&board.loc[0][0], 1)
+
+					//
+					// This is required to place 1st tile in top corner
+					//
+					loc := &board.loc[0][0]
+					loc.edgePairList = loc.edgePairMap[calcEdgePairID(0, 0)]
+					loc.edgePairList.needCount++
+					tiles[0].placeTileOnBoard(loc, 1)
 					//fmt.Println(tiles)
 				}
 			}

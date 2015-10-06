@@ -13,7 +13,7 @@ type BoardLocation struct {
 	right        *BoardLocation
 	// Dynamtic parts of a location on the board
 	tile         *Tile           // pointer to current tile at
-	edgePairMap  tileEdgePairMap // TODO what is this used  for ??
+	edgePairMap  tileEdgePairMap // this is map of all the edgepair lists valid for this location (corner, edge or normal ) this has to be like this as a corner and edge edgepair can look the same!
 	edgePairList *tileEdgePairList
 }
 
@@ -173,12 +173,7 @@ func (board *Board) createBoard(tileSet TileSet) error {
 				loc.up = nil
 				loc.right = &board.loc[y][x+1]
 				loc.down = &board.loc[y+1][x]
-				//loc.edgePair = calcEdgePairID(0, 0) //can be deleted
-				//
-				// This is required to place 1st tile in top corner
-				//
-				loc.edgePairList = loc.edgePairMap[calcEdgePairID(0, 0)]
-				loc.edgePairList.needCount++
+
 			} else if x == 0 && y == tileSet.height-1 { // bottom left
 				loc.positionType = 'C'
 				loc.edgePairMap = tileSet.cornerTilesEdgePairsMap
