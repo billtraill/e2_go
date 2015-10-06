@@ -139,17 +139,25 @@ func (board Board) setDiagonalTraversal() {
 
 }
 
-func setRowByRowTraversal() {
-	/*	pos.x++
-		if pos.x >= board.width {
-		  pos.x = 0
-		  pos.y++
+func (board Board) setRowByRowTraversal() {
+	xp, yp := 0, 0
+	x, y := 0, 1
+	for {
+		fmt.Println(x, y)
+		board.loc[yp][xp].traverseNext = &board.loc[y][x]
+		xp, yp = x, y
+		x++
+		if x >= board.width {
+			x = 0
+			y++
 		}
-		return pos */
+
+	}
 }
 
 func (board Board) setTraversal() {
 	board.setDiagonalTraversal()
+
 }
 
 func (board *Board) createBoard(tileSet TileSet) error {
