@@ -222,42 +222,47 @@ func (tile *Tile) placeTileOnBoard(loc *BoardLocation, progress int) bool {
 	// place tile on the board
 	loc.tile = tile
 
-	if reserveDownPosition(loc) {
-		if reserveAcrossPosition(loc) {
+	//if reserveDownPosition(loc) {
+	//if reserveAcrossPosition(loc) {
 
-			// get next location to move to
-			nextPos := loc.traverseNext
-			//fmt.Println("Next Position:", nextPos)
+	// get next location to move to
+	nextPos := loc.traverseNext
 
-			//fmt.Println("Next edgePairID:", edgePairDescription(edgePairID))
-			if progress >= highestProgress {
-				fmt.Println(board)
-				highestProgress = progress
-				fmt.Println("Placed:", progress, time.Now().Format(time.RFC850))
-				if progress == (board.width * board.height) {
-					fmt.Println(board)
-					log.Fatalln("finished solution ") // TODO Print out proper solution
-					return true
-				}
-			}
+	//fmt.Println("Next Position:", nextPos)
 
-			edgePairList := nextPos.edgePairList
-
-			// Iterates over all the tiles in the list...
-			for i := 0; i < edgePairList.availableNoTiles; i++ {
-				nexTtile := edgePairList.tiles[i].tile
-				// set the tiles rotation
-				nexTtile.rotation = edgePairList.tiles[i].rotationForEdgePair
-				// Travers to next position on board
-				finished := nexTtile.placeTileOnBoard(nextPos, progress+1)
-				if finished {
-					return true
-				}
-			}
-			clearReserveAcrossPosition(loc)
+	//fmt.Println("Next edgePairID:", edgePairDescription(edgePairID))
+	if progress >= highestProgress {
+		fmt.Println(board)
+		highestProgress = progress
+		fmt.Println("Placed:", progress, time.Now().Format(time.RFC850))
+		if progress == (board.width * board.height) {
+			fmt.Println(board)
+			log.Fatalln("finished solution ") // TODO Print out proper solution
+			return true
 		}
-		clearReserveDownPosition(loc)
 	}
+	edgePairID := nextPos.getEdgePairIDForLocation()
+	//edgePairList := nextPos.edgePairList
+
+	edgePairList, ok := loc.right.edgePairMap[edgePairID]
+	if ok {
+		// Iterates over all the tiles in the list...
+		for i := 0; i < edgePairList.availableNoTiles; i++ {
+			nexTtile := edgePairList.tiles[i].tile
+			// set the tiles rotation
+			nexTtile.rotation = edgePairList.tiles[i].rotationForEdgePair
+			// Travers to next position on board
+			finished := nexTtile.placeTileOnBoard(nextPos, progress+1)
+			if finished {
+				return true
+			}
+		}
+	}
+
+	//	clearReserveAcrossPosition(loc)
+	//}
+	//clearReserveDownPosition(loc)
+	//}
 
 	// remove from board
 	//fmt.Println("removeTile :", tile.tileNumber, "Pos:", pos)
