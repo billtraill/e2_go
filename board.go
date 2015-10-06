@@ -141,7 +141,7 @@ func (board Board) setDiagonalTraversal() {
 
 func (board Board) setRowByRowTraversal() {
 	xp, yp := 0, 0
-	x, y := 0, 1
+	x, y := 1, 0
 	for {
 		fmt.Println(x, y)
 		board.loc[yp][xp].traverseNext = &board.loc[y][x]

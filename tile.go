@@ -212,7 +212,7 @@ func clearReserveAcrossPosition(loc *BoardLocation) {
 // edges.
 func (tile *Tile) placeTileOnBoard(loc *BoardLocation, progress int) bool {
 
-	//fmt.Println("Placing tile:", tile.tileNumber, "at position:", pos, "rotation:", rotation)
+	//fmt.Println("Placing tile:", tile.tileNumber, "at position:", loc.x, loc.y, "rotation:", tile.rotation)
 	// remove the tile from the lists
 	tile.edgePairLists[0].removeTile(tile.positionInEdgePairList[0])
 	tile.edgePairLists[1].removeTile(tile.positionInEdgePairList[1])
@@ -225,11 +225,6 @@ func (tile *Tile) placeTileOnBoard(loc *BoardLocation, progress int) bool {
 	//if reserveDownPosition(loc) {
 	//if reserveAcrossPosition(loc) {
 
-	// get next location to move to
-	nextPos := loc.traverseNext
-
-	//fmt.Println("Next Position:", nextPos)
-
 	//fmt.Println("Next edgePairID:", edgePairDescription(edgePairID))
 	if progress >= highestProgress {
 		fmt.Println(board)
@@ -241,11 +236,15 @@ func (tile *Tile) placeTileOnBoard(loc *BoardLocation, progress int) bool {
 			return true
 		}
 	}
+	// get next location to move to
+	nextPos := loc.traverseNext
+	//fmt.Println("Next Position:", nextPos.x, nextPos.y)
+
 	edgePairID := nextPos.getEdgePairIDForLocation()
 	//edgePairList := nextPos.edgePairList
 
-	edgePairList, ok := loc.right.edgePairMap[edgePairID]
-	if ok {
+	edgePairList, ok := nextPos.edgePairMap[edgePairID]
+	if ok { // there is an edge pair mapping for this location ...
 		// Iterates over all the tiles in the list...
 		for i := 0; i < edgePairList.availableNoTiles; i++ {
 			nexTtile := edgePairList.tiles[i].tile
