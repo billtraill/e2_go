@@ -4,14 +4,17 @@ import "fmt"
 
 // BoardLocation : describes the position of location on the board and what is currently at that location
 type BoardLocation struct {
-	//x, y         int   // the x y location of the position - static
-	tile *Tile // pointer to current tile at
-	// rotation     int   // current rotation of tile piece. Note corners and edge pieces have static rotations!
-	positionType byte //
-	edgePairMap  tileEdgePairMap
-	//edgePair     edgePairID // the edgepair this location could take -
+	x, y         int            // the x y location of the position - static
+	positionType byte           //
+	traverseNext BoardPosition  // traversal order - setup when board is created
+	left         *BoardLocation // points to location on left
+	down         *BoardLocation // points to location on down
+	up           *BoardLocation //
+	right        *BoardLocation
+	// Dynamtic parts of a location on the board
+	tile         *Tile           // pointer to current tile at
+	edgePairMap  tileEdgePairMap // TODO what is this used  for ??
 	edgePairList *tileEdgePairList
-	traverseNext BoardPosition
 }
 
 // Board : holds the description of the board and any tiles that may currently be placed apon it
@@ -210,48 +213,88 @@ func (board *Board) createBoard(tileSet TileSet) error {
 	for y := range board.loc {
 		for x := range board.loc[y] {
 			loc := &board.loc[y][x]
-			if x == 0 && y == 0 { // top right
+			loc.x = x // not really used for much
+			loc.y = y
+			if x == 0 && y == 0 { // top left
 				loc.positionType = 'C'
-				//loc.rotation = 0
 				loc.edgePairMap = tileSet.cornerTilesEdgePairsMap
+				loc.left = nil
+				loc.up = nil
+				loc.right = &board.loc[y][x+1]
+				loc.down = &board.loc[y+1][x]
 				//loc.edgePair = calcEdgePairID(0, 0) //can be deleted
 				//
 				// This is required to place 1st tile in top corner
 				//
 				loc.edgePairList = loc.edgePairMap[calcEdgePairID(0, 0)]
 				loc.edgePairList.needCount++
-			} else if x == 0 && y == tileSet.height-1 { // bottom right
+			} else if x == 0 && y == tileSet.height-1 { // bottom left
 				loc.positionType = 'C'
-				//loc.rotation = 3
 				loc.edgePairMap = tileSet.cornerTilesEdgePairsMap
-			} else if x == tileSet.width-1 && y == 0 { // top left
+
+				loc.left = nil
+				loc.up = &board.loc[y-1][x]
+				loc.right = &board.loc[y][x+1]
+				loc.down = nil
+			} else if x == tileSet.width-1 && y == 0 { // top right
 				loc.positionType = 'C'
-				//loc.rotation = 1
 				loc.edgePairMap = tileSet.cornerTilesEdgePairsMap
+
+				loc.left = &board.loc[y][x-1]
+				loc.up = nil
+				loc.right = nil
+				loc.down = &board.loc[y+1][x]
 			} else if x == tileSet.width-1 && y == tileSet.height-1 { // bottom right
 				loc.positionType = 'C'
-				//loc.rotation = 2
 				loc.edgePairMap = tileSet.cornerTilesEdgePairsMap
+
+				loc.left = &board.loc[y][x-1]
+				loc.up = &board.loc[y-1][x]
+				loc.right = nil
+				loc.down = nil
+
 			} else if x == 0 { // left  edge of board
 				loc.positionType = 'E'
-				//loc.rotation = 0
 				loc.edgePairMap = tileSet.edgeTilesEdgePairsMap
+
+				loc.left = nil
+				loc.up = &board.loc[y-1][x]
+				loc.right = &board.loc[y][x+1]
+				loc.down = &board.loc[y+1][x]
+
 			} else if x == tileSet.width-1 { // right edge of board
 				loc.positionType = 'E'
-				//loc.rotation = 2
 				loc.edgePairMap = tileSet.edgeTilesEdgePairsMap
+
+				loc.left = &board.loc[y][x-1]
+				loc.up = &board.loc[y-1][x]
+				loc.right = nil
+				loc.down = &board.loc[y+1][x]
+
 			} else if y == 0 { // top edge of board
 				loc.positionType = 'E'
-				//loc.rotation = 1
 				loc.edgePairMap = tileSet.edgeTilesEdgePairsMap
-			} else if y == tileSet.height-1 { // top edge of board
+
+				loc.left = &board.loc[y][x-1]
+				loc.up = nil
+				loc.right = &board.loc[y][x+1]
+				loc.down = &board.loc[y+1][x]
+			} else if y == tileSet.height-1 { // bottom  edge of board
 				loc.positionType = 'E'
-				//loc.rotation = 3
 				loc.edgePairMap = tileSet.edgeTilesEdgePairsMap
+
+				loc.left = &board.loc[y][x-1]
+				loc.up = &board.loc[y-1][x]
+				loc.right = &board.loc[y][x+1]
+				loc.down = nil
 			} else { // someplace in the middile of board
 				loc.positionType = 'N'
 				loc.edgePairMap = tileSet.normalTilesEdgePairsMap
-				// rotations are dynamic in the middile of the board so no need to set here.
+
+				loc.left = &board.loc[y][x-1]
+				loc.up = &board.loc[y-1][x]
+				loc.right = &board.loc[y][x+1]
+				loc.down = &board.loc[y+1][x]
 			}
 		}
 	}
