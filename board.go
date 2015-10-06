@@ -6,7 +6,7 @@ import "fmt"
 type BoardLocation struct {
 	x, y         int            // the x y location of the position - static
 	positionType byte           //
-	traverseNext BoardPosition  // traversal order - setup when board is created
+	traverseNext *BoardLocation // traversal order - setup when board is created
 	left         *BoardLocation // points to location on left
 	down         *BoardLocation // points to location on down
 	up           *BoardLocation //
@@ -28,11 +28,13 @@ type BoardPosition struct {
 	x, y int
 }
 
+/*
 // nextPosition returns the next position on the board to solve.
 func (board Board) nextPosition(pos BoardPosition) BoardPosition {
 	return board.loc[pos.y][pos.x].traverseNext
 
 }
+*/
 
 // boardLocationTypeDescription for a given position type returns a string "describing" that position.
 func boardLocationTypeDescription(t byte) string {
@@ -118,7 +120,7 @@ func (board Board) setDiagonalTraversal() {
 
 	for {
 		fmt.Println(x, y)
-		board.loc[yp][xp].traverseNext = BoardPosition{x, y}
+		board.loc[yp][xp].traverseNext = &board.loc[y][x]
 		xp, yp = x, y
 		if x == board.width-1 && y == board.height-1 {
 			// board.loc[yp][xp].traverseNext = BoardPosition{-1, -1}
@@ -160,45 +162,7 @@ func setRowByRowTraversal() {
 }
 
 func (board Board) setTraversal() {
-	xp, yp := 0, 0
-	x, y := 0, 1
-	minY := 0
-	maxY := board.height - 1
-	minX := 0
-	maxX := board.width - 1
-
-	for {
-		fmt.Println(x, y)
-		board.loc[yp][xp].traverseNext = BoardPosition{x, y}
-		xp, yp = x, y
-		if x == board.width-1 && y == board.height-1 {
-			// board.loc[yp][xp].traverseNext = BoardPosition{-1, -1}
-			break
-		}
-		y--
-		if y < minY {
-			y = x + 1
-			if y > maxY {
-				y = maxY
-				minX++
-			}
-			x = minX
-		} else {
-			x++
-			if x > maxX {
-				y = x + 1
-				if y > maxY {
-					y = maxY
-					minX++
-				}
-				x = minX
-			}
-		}
-
-	}
-
-	return
-
+	board.setDiagonalTraversal()
 }
 
 func (board *Board) createBoard(tileSet TileSet) error {
@@ -302,36 +266,17 @@ func (board *Board) createBoard(tileSet TileSet) error {
 	return nil
 }
 
-func (board *Board) placeTile(tile *Tile, pos BoardPosition) {
-	loc := &board.loc[pos.y][pos.x]
-	loc.tile = tile
-	/*
-		if loc.positionType == 'E' || loc.positionType == 'C' {
-			// given rotation and board rotation should be the same, just do a quick check?
-			if loc.rotation != rotation {
-				log.Fatal(fmt.Sprintf("Tile %v, at position %v does not match rotation. Board:%v Tile %v", tile, pos, loc.rotation, rotation))
-			}
-		}
-	*/
-}
-
-func (board *Board) removeTile(tile *Tile, pos BoardPosition) {
-	loc := &board.loc[pos.y][pos.x]
-	loc.tile = nil
-	// loc.rotation = rotation
-}
-
-func (board *Board) getEdgePairIDForLocation(pos BoardPosition) edgePairID {
+func (loc *BoardLocation) getEdgePairIDForLocation() edgePairID {
 	var a, b side
-	if pos.x == 0 {
+	if loc.left == nil {
 		a = 0
 	} else {
-		a = board.loc[pos.y][pos.x-1].tile.sides[(board.loc[pos.y][pos.x-1].tile.rotation+2)%4] // OK
+		a = loc.left.tile.sides[(loc.left.tile.rotation+2)%4] // OK
 	}
-	if pos.y == 0 {
+	if loc.up == nil {
 		b = 0
 	} else {
-		b = board.loc[pos.y-1][pos.x].tile.sides[(board.loc[pos.y-1][pos.x].tile.rotation+3)%4]
+		b = loc.up.tile.sides[(loc.up.tile.rotation+3)%4]
 	}
 	return calcEdgePairID(a, b)
 }

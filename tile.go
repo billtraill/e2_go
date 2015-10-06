@@ -151,13 +151,13 @@ func (tile *Tile) setTileProperties() {
 // are do a preallocation by incrementing their need count.
 // This ensures we detect that we have not created impossible edge constraint as early as possible
 //
-func reserveDownPosition(pos BoardPosition) bool {
+func reserveDownPosition(loc *BoardLocation) bool {
 	var edgePairList *tileEdgePairList
 
 	var ok bool
-	if pos.y+1 < board.height {
-		edgePairID := board.getEdgePairIDForLocation(BoardPosition{pos.x, pos.y + 1})
-		edgePairList, ok = board.loc[pos.y+1][pos.x].edgePairMap[edgePairID]
+	if loc.down != nil {
+		edgePairID := loc.down.getEdgePairIDForLocation()
+		edgePairList, ok = loc.down.edgePairMap[edgePairID]
 		if !ok {
 			return false
 		}
@@ -165,25 +165,25 @@ func reserveDownPosition(pos BoardPosition) bool {
 		if edgePairList.needCount >= edgePairList.availableNoTiles {
 			return false
 		}
-		board.loc[pos.y+1][pos.x].edgePairList = edgePairList
+		loc.down.edgePairList = edgePairList
 		edgePairList.needCount++
 	}
 	return true
 }
-func clearReserveDownPosition(pos BoardPosition) {
-	if pos.y+1 < board.height {
-		board.loc[pos.y+1][pos.x].edgePairList.needCount--
-		board.loc[pos.y+1][pos.x].edgePairList = nil // not nessary but should catch any bugs!
+func clearReserveDownPosition(loc *BoardLocation) {
+	if loc.down != nil {
+		loc.down.edgePairList.needCount--
+		loc.down.edgePairList = nil // not nessary but should catch any bugs!
 	}
 	return
 }
 
-func reserveAcrossPosition(pos BoardPosition) bool {
+func reserveAcrossPosition(loc *BoardLocation) bool {
 	var edgePairList *tileEdgePairList
 	var ok bool
-	if pos.y == 0 && pos.x+1 < board.width {
-		edgePairID := board.getEdgePairIDForLocation(BoardPosition{pos.x + 1, pos.y})
-		edgePairList, ok = board.loc[pos.y][pos.x+1].edgePairMap[edgePairID]
+	if loc.up == nil && loc.right != nil {
+		edgePairID := loc.right.getEdgePairIDForLocation()
+		edgePairList, ok = loc.right.edgePairMap[edgePairID]
 		if !ok {
 			return false
 		}
@@ -191,15 +191,15 @@ func reserveAcrossPosition(pos BoardPosition) bool {
 		if edgePairList.needCount >= edgePairList.availableNoTiles {
 			return false
 		}
-		board.loc[pos.y][pos.x+1].edgePairList = edgePairList
+		loc.right.edgePairList = edgePairList
 		edgePairList.needCount++
 	}
 	return true
 }
-func clearReserveAcrossPosition(pos BoardPosition) {
-	if pos.y == 0 && pos.x+1 < board.width {
-		board.loc[pos.y][pos.x+1].edgePairList.needCount--
-		board.loc[pos.y][pos.x+1].edgePairList = nil // not nessary but should catch any bugs!
+func clearReserveAcrossPosition(loc *BoardLocation) {
+	if loc.up == nil && loc.right != nil {
+		loc.right.edgePairList.needCount--
+		loc.right.edgePairList = nil // not nessary but should catch any bugs!
 	}
 	return
 }
@@ -210,7 +210,7 @@ func clearReserveAcrossPosition(pos BoardPosition) {
 // the main datastructure used is the edgePairLists, each tile has 4 associated lists, one for
 // each of its rotations. Each edgepair has a list of all the tile that have this combination of
 // edges.
-func (tile *Tile) placeTileOnBoard(pos BoardPosition, progress int) bool {
+func (tile *Tile) placeTileOnBoard(loc *BoardLocation, progress int) bool {
 
 	//fmt.Println("Placing tile:", tile.tileNumber, "at position:", pos, "rotation:", rotation)
 	// remove the tile from the lists
@@ -220,13 +220,13 @@ func (tile *Tile) placeTileOnBoard(pos BoardPosition, progress int) bool {
 	tile.edgePairLists[3].removeTile(tile.positionInEdgePairList[3])
 
 	// place tile on the board
-	board.placeTile(tile, pos)
-	if reserveDownPosition(pos) {
-		if reserveAcrossPosition(pos) {
+	loc.tile = tile
+
+	if reserveDownPosition(loc) {
+		if reserveAcrossPosition(loc) {
 
 			// get next location to move to
-			//nextPos := board.nextPosition(pos)
-			nextPos := board.loc[pos.y][pos.x].traverseNext
+			nextPos := loc.traverseNext
 			//fmt.Println("Next Position:", nextPos)
 
 			//fmt.Println("Next edgePairID:", edgePairDescription(edgePairID))
@@ -254,14 +254,15 @@ func (tile *Tile) placeTileOnBoard(pos BoardPosition, progress int) bool {
 					return true
 				}
 			}
-			clearReserveAcrossPosition(pos)
+			clearReserveAcrossPosition(loc)
 		}
-		clearReserveDownPosition(pos)
+		clearReserveDownPosition(loc)
 	}
 
 	// remove from board
 	//fmt.Println("removeTile :", tile.tileNumber, "Pos:", pos)
-	board.removeTile(tile, pos)
+	loc.tile = nil
+	//board.loc[pos.y][pos.x].tile = nil
 	// restore tile to its edge pair lists, has to be done in the reverse they were added
 	// to deal with the fact that some times have the same edge pair list more than once !
 	tile.edgePairLists[3].restoreTile()

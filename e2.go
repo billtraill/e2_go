@@ -37,7 +37,7 @@ func main() {
 					//
 					highestProgress = 0
 					tiles[0].rotation = 0
-					tiles[0].placeTileOnBoard(BoardPosition{0, 0}, 1)
+					tiles[0].placeTileOnBoard(&board.loc[0][0], 1)
 					//fmt.Println(tiles)
 				}
 			}
