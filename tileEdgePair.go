@@ -107,6 +107,30 @@ func (edgePairList *tileEdgePairList) removeTile(positionInList int) {
 
 }
 
+func (edgePairList *tileEdgePairList) goRemoveTile(positionInList int) {
+
+	tileToRemove := edgePairList.tiles[positionInList]
+	//fmt.Println("removeTile:removing tile no:", tileToRemove.tile.tileNumber, " in position:", positionInList, "from list:", edgePairList)
+	// Remember it position (used when we restore it)
+	tileToRemove.previousPosition = positionInList
+	// get position of last tile in the list - we are going to swap the one we are removing with this one!
+	positionLastTileInList := edgePairList.availableNoTiles - 1
+	// copy the tile
+	swapTile := edgePairList.tiles[positionLastTileInList] // remember tile at end of the list ...
+	//fmt.Println("removeTile: swapped tile before position in list amended:", swapTile.tile, "Rotation:", swapTile.rotation)
+	// move the tile we are removing to this position.
+	edgePairList.tiles[positionLastTileInList] = tileToRemove
+	// move the tile that was last in list to the place we took out the one we were removing
+	edgePairList.tiles[positionInList] = swapTile
+	swapTile.tile.positionInEdgePairList[swapTile.tilepositionInEdgePairListIndex] = positionInList // note if we do this after next line it breaks if this is last element in list!
+	//tileToRemove.tile.positionInEdgePairList[rotation] = -1                                         // this is just for debug purposes. We don;t really care about its position when its been 'removed'
+
+	// decrement the number of tiles available in the list
+	edgePairList.availableNoTiles--
+
+	complete <- 1
+}
+
 // restoreTile resores the last removed tile from the list
 // it is located one after the end of the list
 //
@@ -127,6 +151,25 @@ func (edgePairList *tileEdgePairList) restoreTile() {
 
 	edgePairList.availableNoTiles++
 
+}
+func (edgePairList *tileEdgePairList) goRestoreTile() {
+
+	// get the  tile at one behond the "end of the list" that is going to be restored
+	tileToRestore := edgePairList.tiles[edgePairList.availableNoTiles]
+	// get previous position of that tile
+	positionToRestoreTo := edgePairList.tiles[edgePairList.availableNoTiles].previousPosition
+	// copy what was at that location
+	swapTile := edgePairList.tiles[positionToRestoreTo] // remember tile at end of the list ...
+	edgePairList.tiles[positionToRestoreTo] = tileToRestore
+	edgePairList.tiles[edgePairList.availableNoTiles] = swapTile
+
+	// Now we need to tell the tiles that we swapped its new position in the edgePairList
+	swapTile.tile.positionInEdgePairList[swapTile.tilepositionInEdgePairListIndex] = edgePairList.availableNoTiles
+	tileToRestore.tile.positionInEdgePairList[tileToRestore.tilepositionInEdgePairListIndex] = positionToRestoreTo
+
+	edgePairList.availableNoTiles++
+
+	complete <- 1
 }
 
 func createEdgePairLists(tiles tileArray, tileType byte) tileEdgePairMap {

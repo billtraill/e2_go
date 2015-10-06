@@ -14,11 +14,12 @@ type tileArray []*Tile
 // gets initialised once and no further changes done to it.
 type Tile struct {
 	// Static attributes
-	tileNumber    int                  // the order the tile was read from the file, starting at 1
-	sides         [4]side              // values of each of the sides. Used when calculating Edge pairs
-	tileType      byte                 // E is edge, C is corner, N is normal
-	edgePairs     [4]edgePairID        // Four edge pairs, adjacent edges
-	edgePairLists [4]*tileEdgePairList // note order of list implies the rotation of the tile from its normalised positon
+	tileNumber         int                  // the order the tile was read from the file, starting at 1
+	sides              [4]side              // values of each of the sides. Used when calculating Edge pairs
+	tileType           byte                 // E is edge, C is corner, N is normal
+	duplicateEdgePairs bool                 // flag to indicate if there are duplicate Edge Pairs it means for these tiles we cannot manage their edge pair lists concurrently
+	edgePairs          [4]edgePairID        // Four edge pairs, adjacent edges
+	edgePairLists      [4]*tileEdgePairList // note order of list implies the rotation of the tile from its normalised positon
 	// dynamic values .... these get changed as we run ....
 	positionInEdgePairList [4]int // this tracks where the tile is currently in the edgePairLists - this changes as we remove/add tiles to lists
 	rotation               int
@@ -97,6 +98,19 @@ func (tile *Tile) setEdgePairs() {
 	for i := range tile.sides {
 		tile.edgePairs[i] = calcEdgePairID(tile.sides[i], tile.sides[(i+1)%4])
 	}
+	// Just a bit of information
+	tile.duplicateEdgePairs = false
+	for i := range tile.edgePairs {
+		for j := range tile.edgePairs {
+			if i != j {
+				if tile.edgePairs[i] == tile.edgePairs[j] {
+					tile.duplicateEdgePairs = true
+					fmt.Println("Tile:", tile.tileNumber, "Has duplicate edgepairs!")
+				}
+			}
+		}
+	}
+	//tile.duplicateEdgePairs = true
 }
 
 // normaliseEdges normalises the tile so the border edges are first in the array
@@ -210,14 +224,28 @@ func clearReserveAcrossPosition(loc *BoardLocation) {
 // the main datastructure used is the edgePairLists, each tile has 4 associated lists, one for
 // each of its rotations. Each edgepair has a list of all the tile that have this combination of
 // edges.
+var complete = make(chan int, 5)
+
 func (tile *Tile) placeTileOnBoard(loc *BoardLocation, progress int) bool {
 
 	//fmt.Println("Placing tile:", tile.tileNumber, "at position:", loc.x, loc.y, "rotation:", tile.rotation)
 	// remove the tile from the lists
-	tile.edgePairLists[0].removeTile(tile.positionInEdgePairList[0])
-	tile.edgePairLists[1].removeTile(tile.positionInEdgePairList[1])
-	tile.edgePairLists[2].removeTile(tile.positionInEdgePairList[2])
-	tile.edgePairLists[3].removeTile(tile.positionInEdgePairList[3])
+	if tile.duplicateEdgePairs {
+		tile.edgePairLists[0].removeTile(tile.positionInEdgePairList[0])
+		tile.edgePairLists[1].removeTile(tile.positionInEdgePairList[1])
+		tile.edgePairLists[2].removeTile(tile.positionInEdgePairList[2])
+		tile.edgePairLists[3].removeTile(tile.positionInEdgePairList[3])
+	} else {
+
+		go tile.edgePairLists[0].goRemoveTile(tile.positionInEdgePairList[0])
+		go tile.edgePairLists[1].goRemoveTile(tile.positionInEdgePairList[1])
+		go tile.edgePairLists[2].goRemoveTile(tile.positionInEdgePairList[2])
+		go tile.edgePairLists[3].goRemoveTile(tile.positionInEdgePairList[3])
+		<-complete
+		<-complete
+		<-complete
+		<-complete
+	}
 
 	// place tile on the board
 	loc.tile = tile
@@ -269,9 +297,22 @@ func (tile *Tile) placeTileOnBoard(loc *BoardLocation, progress int) bool {
 	//board.loc[pos.y][pos.x].tile = nil
 	// restore tile to its edge pair lists, has to be done in the reverse they were added
 	// to deal with the fact that some times have the same edge pair list more than once !
-	tile.edgePairLists[3].restoreTile()
-	tile.edgePairLists[2].restoreTile()
-	tile.edgePairLists[1].restoreTile()
-	tile.edgePairLists[0].restoreTile()
+	if tile.duplicateEdgePairs {
+		tile.edgePairLists[3].restoreTile()
+		tile.edgePairLists[2].restoreTile()
+		tile.edgePairLists[1].restoreTile()
+		tile.edgePairLists[0].restoreTile()
+	} else {
+
+		go tile.edgePairLists[3].goRestoreTile()
+		go tile.edgePairLists[2].goRestoreTile()
+		go tile.edgePairLists[1].goRestoreTile()
+		go tile.edgePairLists[0].goRestoreTile()
+		<-complete
+		<-complete
+		<-complete
+		<-complete
+	}
+
 	return false
 }
