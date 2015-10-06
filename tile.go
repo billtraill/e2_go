@@ -21,6 +21,7 @@ type Tile struct {
 	edgePairLists [4]*tileEdgePairList // note order of list implies the rotation of the tile from its normalised positon
 	// dynamic values .... these get changed as we run ....
 	positionInEdgePairList [4]int // this tracks where the tile is currently in the edgePairLists - this changes as we remove/add tiles to lists
+	rotation               int
 }
 
 func tileTypeDescription(t byte) string {
@@ -37,6 +38,22 @@ func tileTypeDescription(t byte) string {
 	}
 
 	return fmt.Sprintf(desc)
+}
+
+// tileLine is used by boardshowTilesPlaced, it is designed to show a printed representation of a tile over 3 lines.
+// It returns a string for each line for a tile requested, showing its current rotation on the board
+func (tile *Tile) tileLine(line int) string {
+	s := ""
+	if tile == nil {
+		s = "      "
+	} else if line == 0 {
+		s = fmt.Sprintf("   %2v    ", tile.sides[(tile.rotation+1)%4])
+	} else if line == 1 {
+		s = fmt.Sprintf("%2v %2v %2v ", tile.sides[(tile.rotation)%4], tile.tileNumber, tile.sides[(tile.rotation+2)%4])
+	} else if line == 2 {
+		s = fmt.Sprintf("   %2v    ", tile.sides[(tile.rotation+3)%4])
+	}
+	return s
 }
 
 const tileEdgePairShift = 5   // This will allow 5 bits of information for the edge colour ... if more than 2^5 edge types then increase this
@@ -193,7 +210,7 @@ func clearReserveAcrossPosition(pos BoardPosition) {
 // the main datastructure used is the edgePairLists, each tile has 4 associated lists, one for
 // each of its rotations. Each edgepair has a list of all the tile that have this combination of
 // edges.
-func (tile *Tile) placeTileOnBoard(pos BoardPosition, rotation int, progress int) bool {
+func (tile *Tile) placeTileOnBoard(pos BoardPosition, progress int) bool {
 
 	//fmt.Println("Placing tile:", tile.tileNumber, "at position:", pos, "rotation:", rotation)
 	// remove the tile from the lists
@@ -203,7 +220,7 @@ func (tile *Tile) placeTileOnBoard(pos BoardPosition, rotation int, progress int
 	tile.edgePairLists[3].removeTile(tile.positionInEdgePairList[3])
 
 	// place tile on the board
-	board.placeTile(tile, rotation, pos)
+	board.placeTile(tile, pos)
 	if reserveDownPosition(pos) {
 		if reserveAcrossPosition(pos) {
 
@@ -213,9 +230,9 @@ func (tile *Tile) placeTileOnBoard(pos BoardPosition, rotation int, progress int
 			//fmt.Println("Next Position:", nextPos)
 
 			//fmt.Println("Next edgePairID:", edgePairDescription(edgePairID))
-			if progress >= highest_progress {
+			if progress >= highestProgress {
 				fmt.Println(board)
-				highest_progress = progress
+				highestProgress = progress
 				fmt.Println("Placed:", progress, time.Now().Format(time.RFC850))
 				if progress == (board.width * board.height) {
 					fmt.Println(board)
@@ -229,9 +246,10 @@ func (tile *Tile) placeTileOnBoard(pos BoardPosition, rotation int, progress int
 			// Iterates over all the tiles in the list...
 			for i := 0; i < edgePairList.availableNoTiles; i++ {
 				nexTtile := edgePairList.tiles[i].tile
-				nexTtilerotation := edgePairList.tiles[i].rotation
+				// set the tiles rotation
+				nexTtile.rotation = edgePairList.tiles[i].rotationForEdgePair
 				// Travers to next position on board
-				finished := nexTtile.placeTileOnBoard(nextPos, nexTtilerotation, progress+1)
+				finished := nexTtile.placeTileOnBoard(nextPos, progress+1)
 				if finished {
 					return true
 				}
@@ -243,7 +261,7 @@ func (tile *Tile) placeTileOnBoard(pos BoardPosition, rotation int, progress int
 
 	// remove from board
 	//fmt.Println("removeTile :", tile.tileNumber, "Pos:", pos)
-	board.removeTile(tile, rotation, pos)
+	board.removeTile(tile, pos)
 	// restore tile to its edge pair lists, has to be done in the reverse they were added
 	// to deal with the fact that some times have the same edge pair list more than once !
 	tile.edgePairLists[3].restoreTile()

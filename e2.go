@@ -8,7 +8,7 @@ import (
 // eh
 var board Board
 var tileSet TileSet
-var highest_progress int
+var highestProgress int
 
 func main() {
 
@@ -35,8 +35,9 @@ func main() {
 					}
 					//fmt.Println(board)
 					//
-					highest_progress = 0
-					tiles[0].placeTileOnBoard(BoardPosition{0, 0}, 0, 1)
+					highestProgress = 0
+					tiles[0].rotation = 0
+					tiles[0].placeTileOnBoard(BoardPosition{0, 0}, 1)
 					//fmt.Println(tiles)
 				}
 			}

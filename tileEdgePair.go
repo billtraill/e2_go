@@ -23,7 +23,7 @@ type tileEdgePairList struct { // equiv to EPListType
 type tileAndRotation struct {
 	tile                            *Tile
 	tilepositionInEdgePairListIndex int // we need to know this as when we move the tiles in the edgePosition lists this tells us the lists index in the tile! This does not change
-	rotation                        int // tile rotaton note this is its (4-index)%4
+	rotationForEdgePair             int // tile rotaton note this is its (4-index)%4
 	// Dynamic elements....
 	previousPosition int // when we remove a tile, this holds its the position we removed it from. Need for restore.
 }
@@ -53,12 +53,12 @@ func (edgePairList *tileEdgePairList) String() string {
 
 	s := fmt.Sprintf("%v: %v %v (", edgePairDescription(edgePairList.edgePairID), tileTypeDescription(edgePairList.tileType), edgePairList.availableNoTiles)
 	for i := 0; i < edgePairList.availableNoTiles; i++ {
-		s = s + fmt.Sprintf("t%v r%v i%v,", edgePairList.tiles[i].tile.tileNumber, edgePairList.tiles[i].rotation, edgePairList.tiles[i].tilepositionInEdgePairListIndex)
+		s = s + fmt.Sprintf("t%v r%v i%v,", edgePairList.tiles[i].tile.tileNumber, edgePairList.tiles[i].rotationForEdgePair, edgePairList.tiles[i].tilepositionInEdgePairListIndex)
 	}
 	s = s + ")  **  "
 	//
 	for i := edgePairList.availableNoTiles; i < edgePairList.totalNoTilesInList; i++ {
-		s = s + fmt.Sprintf("t%v r%v [pp%v],", edgePairList.tiles[i].tile.tileNumber, edgePairList.tiles[i].rotation, edgePairList.tiles[i].previousPosition)
+		s = s + fmt.Sprintf("t%v r%v [pp%v],", edgePairList.tiles[i].tile.tileNumber, edgePairList.tiles[i].rotationForEdgePair, edgePairList.tiles[i].previousPosition)
 	}
 	return s
 }
@@ -72,7 +72,7 @@ func (edgePairList *tileEdgePairList) addTile(tile *Tile, tileRotation int) {
 
 	tileAndRotation.tile = tile
 	//tileAndRotation.previousPosition = -1   // only used for debugging when printing out info
-	tileAndRotation.rotation = tileRotation // (4 - tileRotation) % 4
+	tileAndRotation.rotationForEdgePair = tileRotation // (4 - tileRotation) % 4
 
 	edgePairList.tiles[edgePairList.totalNoTilesInList] = &tileAndRotation
 	// Each tile tracks which edgePairList it is in and also its position in that list
