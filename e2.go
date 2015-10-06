@@ -44,7 +44,9 @@ func main() {
 					loc := &board.loc[0][0]
 					loc.edgePairList = loc.edgePairMap[calcEdgePairID(0, 0)]
 					loc.edgePairList.needCount++
-					tiles[0].placeTileOnBoard(loc, 1)
+					loc.tile = tiles[0]
+					loc.tile.rotation = 0
+					loc.placeTileOnBoard(1)
 					//fmt.Println(tiles)
 				}
 			}

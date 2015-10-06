@@ -226,18 +226,18 @@ func clearReserveAcrossPosition(loc *BoardLocation) {
 // edges.
 var complete = make(chan int, 5)
 
-func (tile *Tile) placeTileOnBoard(loc *BoardLocation, progress int) bool {
+func (loc *BoardLocation) placeTileOnBoard(progress int) bool {
 
 	//fmt.Println("Placing tile:", tile.tileNumber, "at position:", loc.x, loc.y, "rotation:", tile.rotation)
 	// remove the tile from the lists
 
-	tile.edgePairLists[0].removeTile(tile.positionInEdgePairList[0])
-	tile.edgePairLists[1].removeTile(tile.positionInEdgePairList[1])
-	tile.edgePairLists[2].removeTile(tile.positionInEdgePairList[2])
-	tile.edgePairLists[3].removeTile(tile.positionInEdgePairList[3])
+	loc.tile.edgePairLists[0].removeTile(loc.tile.positionInEdgePairList[0])
+	loc.tile.edgePairLists[1].removeTile(loc.tile.positionInEdgePairList[1])
+	loc.tile.edgePairLists[2].removeTile(loc.tile.positionInEdgePairList[2])
+	loc.tile.edgePairLists[3].removeTile(loc.tile.positionInEdgePairList[3])
 
 	// place tile on the board
-	loc.tile = tile
+	//loc.tile = tile
 
 	//if reserveDownPosition(loc) {
 	//if reserveAcrossPosition(loc) {
@@ -267,8 +267,11 @@ func (tile *Tile) placeTileOnBoard(loc *BoardLocation, progress int) bool {
 			nexTtile := edgePairList.tiles[i].tile
 			// set the tiles rotation
 			nexTtile.rotation = edgePairList.tiles[i].rotationForEdgePair
+			// place tile on the board in the next position and traverse to it
+			nextPos.tile = nexTtile
 			// Travers to next position on board
-			finished := nexTtile.placeTileOnBoard(nextPos, progress+1)
+			finished := nextPos.placeTileOnBoard(progress + 1)
+			nextPos.tile = nil
 			if finished {
 				return true
 			}
@@ -280,17 +283,13 @@ func (tile *Tile) placeTileOnBoard(loc *BoardLocation, progress int) bool {
 	//clearReserveDownPosition(loc)
 	//}
 
-	// remove from board
-	//fmt.Println("removeTile :", tile.tileNumber, "Pos:", pos)
-	loc.tile = nil
-	//board.loc[pos.y][pos.x].tile = nil
 	// restore tile to its edge pair lists, has to be done in the reverse they were added
 	// to deal with the fact that some times have the same edge pair list more than once !
 
-	tile.edgePairLists[3].restoreTile()
-	tile.edgePairLists[2].restoreTile()
-	tile.edgePairLists[1].restoreTile()
-	tile.edgePairLists[0].restoreTile()
+	loc.tile.edgePairLists[3].restoreTile()
+	loc.tile.edgePairLists[2].restoreTile()
+	loc.tile.edgePairLists[1].restoreTile()
+	loc.tile.edgePairLists[0].restoreTile()
 
 	return false
 }
