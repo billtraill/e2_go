@@ -84,6 +84,8 @@ func (edgePairList *tileEdgePairList) addTile(tile *Tile, tileRotation int) {
 	edgePairList.availableNoTiles = edgePairList.totalNoTilesInList
 }
 
+//var swapTile *tileAndRotation
+
 func (edgePairList *tileEdgePairList) removeTile(positionInList int) {
 
 	tileToRemove := edgePairList.tiles[positionInList]
@@ -107,6 +109,7 @@ func (edgePairList *tileEdgePairList) removeTile(positionInList int) {
 
 }
 
+var complete = make(chan int, 5) // used by the concurrent versions of remove/restore - not used in current solutions as it worked out slower than sequential
 func (edgePairList *tileEdgePairList) goRemoveTile(positionInList int) {
 
 	tileToRemove := edgePairList.tiles[positionInList]

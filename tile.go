@@ -224,7 +224,6 @@ func clearReserveAcrossPosition(loc *BoardLocation) {
 // the main datastructure used is the edgePairLists, each tile has 4 associated lists, one for
 // each of its rotations. Each edgepair has a list of all the tile that have this combination of
 // edges.
-var complete = make(chan int, 5)
 
 func (loc *BoardLocation) placeTileOnBoard(progress int) bool {
 
@@ -334,7 +333,7 @@ func traverseBoard() {
 			edgePairID = nextPos.getEdgePairIDForLocation()
 
 			edgePairList, ok = nextPos.edgePairMap[edgePairID]
-			if ok && edgePairList.availableNoTiles > 0 { // valid edgepair list and it has tiles on it. Note the edgepair might be the same as the current one TODO work out if this has any impacts.
+			if ok && edgePairList.availableNoTiles > 0 { // valid edgepair list and it has tiles on it.
 				progress++
 				// remove the tile from the EP lists
 				loc.tile.edgePairLists[0].removeTile(loc.tile.positionInEdgePairList[0])
