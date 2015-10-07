@@ -300,6 +300,7 @@ func traverseBoard() {
 	var progress int
 	var edgePairList *tileEdgePairList
 	var ok bool
+	var numberInterations uint64
 
 	var highestProgress int
 
@@ -307,11 +308,13 @@ func traverseBoard() {
 	loc = &board.loc[0][0]
 	loc.edgePairList = loc.edgePairMap[calcEdgePairID(0, 0)]
 	loc.index = 0
+	loc.listSize = 1
 
 	progress = 0
 	highestProgress = 0
 
 	for {
+		numberInterations++
 		// are there still tiles left to try in the edge pair list on the current location
 		if loc.index < loc.edgePairList.availableNoTiles {
 			loc.tile = loc.edgePairList.tiles[loc.index].tile
@@ -321,6 +324,7 @@ func traverseBoard() {
 				fmt.Println(board)
 				highestProgress = progress
 				fmt.Println("Placed:", progress, time.Now().Format(time.RFC850))
+				fmt.Println("Number of iterations:", numberInterations)
 				if progress == (board.width*board.height)-1 {
 					fmt.Println(board)
 					fmt.Println("finished solution ") // TODO Print out proper solution
@@ -343,6 +347,7 @@ func traverseBoard() {
 				// move to next position on board
 				nextPos.edgePairList = edgePairList
 				nextPos.index = 0
+				nextPos.listSize = edgePairList.availableNoTiles // just for debug
 				loc = nextPos
 				continue
 			} else { // move onto next tile in list
@@ -366,4 +371,5 @@ func traverseBoard() {
 		}
 	}
 
+	fmt.Println("Number of iterations to solution:", numberInterations)
 }
