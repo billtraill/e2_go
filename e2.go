@@ -33,21 +33,24 @@ func main() {
 					if err != nil {
 						fmt.Println(err)
 					}
-					//fmt.Println(board)
-					//
-					highestProgress = 0
-					tiles[0].rotation = 0
+					traverseBoard()
+					/*
+						//fmt.Println(board)
+						//
+						highestProgress = 0
+						tiles[0].rotation = 0
 
-					//
-					// This is required to place 1st tile in top corner
-					//
-					loc := &board.loc[0][0]
-					loc.edgePairList = loc.edgePairMap[calcEdgePairID(0, 0)]
-					loc.edgePairList.needCount++
-					loc.tile = tiles[0]
-					loc.tile.rotation = 0
-					loc.placeTileOnBoard(1)
-					//fmt.Println(tiles)
+						//
+						// This is required to place 1st tile in top corner
+						//
+						loc := &board.loc[0][0]
+						loc.edgePairList = loc.edgePairMap[calcEdgePairID(0, 0)]
+						loc.edgePairList.needCount++
+						loc.tile = tiles[0]
+						loc.tile.rotation = 0
+						loc.placeTileOnBoard(1)
+						//fmt.Println(tiles)
+					*/
 				}
 			}
 
