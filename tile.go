@@ -313,7 +313,7 @@ func traverseBoard() {
 	highestProgress = 0
 
 	for {
-		// are we at the end of the edge pair list currently associated with the current location
+		// are there still tiles left to try in the edge pair list on the current location
 		if loc.index < loc.edgePairList.availableNoTiles {
 			loc.tile = loc.edgePairList.tiles[loc.index].tile
 			loc.tile.rotation = loc.edgePairList.tiles[loc.index].rotationForEdgePair
@@ -361,7 +361,7 @@ func traverseBoard() {
 			loc.tile.edgePairLists[2].restoreTile()
 			loc.tile.edgePairLists[1].restoreTile()
 			loc.tile.edgePairLists[0].restoreTile()
-			loc.tile = nil // probably not required but handy
+			//loc.tile = nil // probably not required but handy, used when we print out progress ...
 			loc.index++
 
 		}
