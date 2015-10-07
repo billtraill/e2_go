@@ -7,6 +7,7 @@ type BoardLocation struct {
 	x, y         int            // the x y location of the position - static
 	positionType byte           //
 	traverseNext *BoardLocation // traversal order - setup when board is created
+	traversePrev *BoardLocation // points to previous location
 	left         *BoardLocation // points to location on left
 	down         *BoardLocation // points to location on down
 	up           *BoardLocation //
@@ -15,6 +16,7 @@ type BoardLocation struct {
 	tile         *Tile           // pointer to current tile at
 	edgePairMap  tileEdgePairMap // this is map of all the edgepair lists valid for this location (corner, edge or normal ) this has to be like this as a corner and edge edgepair can look the same!
 	edgePairList *tileEdgePairList
+	index        int // current index in edgepair list
 }
 
 // Board : holds the description of the board and any tiles that may currently be placed apon it
@@ -145,6 +147,7 @@ func (board Board) setRowByRowTraversal() {
 	for {
 		fmt.Println(x, y)
 		board.loc[yp][xp].traverseNext = &board.loc[y][x]
+		board.loc[y][x].traversePrev = &board.loc[yp][xp]
 		xp, yp = x, y
 		if x == board.width-1 && y == board.height-1 {
 			// board.loc[yp][xp].traverseNext = BoardPosition{-1, -1}

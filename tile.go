@@ -293,3 +293,78 @@ func (loc *BoardLocation) placeTileOnBoard(progress int) bool {
 
 	return false
 }
+
+func traverseBoard() {
+	var nextPos *BoardLocation
+	var loc *BoardLocation
+	var edgePairID edgePairID
+	var progress int
+	var edgePairList *tileEdgePairList
+	var ok bool
+
+	var highestProgress int
+
+	// need to have current location set to 1st tile to start TODO
+	loc = &board.loc[0][0]
+	loc.edgePairList = loc.edgePairMap[calcEdgePairID(0, 0)]
+	loc.index = 0
+
+	progress = 0
+	highestProgress = 0
+
+	for {
+		// are we at the end of the edge pair list currently associated with the current location
+		if loc.index < loc.edgePairList.availableNoTiles {
+			loc.tile = loc.edgePairList.tiles[loc.index].tile
+			loc.tile.rotation = loc.edgePairList.tiles[loc.index].rotationForEdgePair
+
+			if progress >= highestProgress {
+				fmt.Println(board)
+				highestProgress = progress
+				fmt.Println("Placed:", progress, time.Now().Format(time.RFC850))
+				if progress == (board.width*board.height)-1 {
+					fmt.Println(board)
+					fmt.Println("finished solution ") // TODO Print out proper solution
+					return
+				}
+			}
+
+			// Now see if there is a valid EP in next location
+			nextPos = loc.traverseNext
+			edgePairID = nextPos.getEdgePairIDForLocation()
+
+			edgePairList, ok = nextPos.edgePairMap[edgePairID]
+			if ok && edgePairList.availableNoTiles > 0 { // valid edgepair list and it has tiles on it. Note the edgepair might be the same as the current one TODO work out if this has any impacts.
+				progress++
+				// remove the tile from the EP lists
+				loc.tile.edgePairLists[0].removeTile(loc.tile.positionInEdgePairList[0])
+				loc.tile.edgePairLists[1].removeTile(loc.tile.positionInEdgePairList[1])
+				loc.tile.edgePairLists[2].removeTile(loc.tile.positionInEdgePairList[2])
+				loc.tile.edgePairLists[3].removeTile(loc.tile.positionInEdgePairList[3])
+				// move to next position on board
+				nextPos.edgePairList = edgePairList
+				nextPos.index = 0
+				loc = nextPos
+				continue
+			} else { // move onto next tile in list
+				loc.index++
+				continue
+			}
+		} else {
+			// backtrack
+			//fmt.Println("Backtracking")
+			progress--
+			// traverse to previous tile
+			loc = loc.traversePrev
+			// remove the tile in the previous location ...
+			loc.tile.edgePairLists[3].restoreTile()
+			loc.tile.edgePairLists[2].restoreTile()
+			loc.tile.edgePairLists[1].restoreTile()
+			loc.tile.edgePairLists[0].restoreTile()
+			loc.tile = nil // probably not required but handy
+			loc.index++
+
+		}
+	}
+
+}
