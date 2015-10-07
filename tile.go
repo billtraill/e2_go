@@ -328,7 +328,7 @@ func traverseBoard() {
 				if progress == (board.width*board.height)-1 {
 					fmt.Println(board)
 					fmt.Println("finished solution ") // TODO Print out proper solution
-					return
+					break
 				}
 			}
 
