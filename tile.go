@@ -319,7 +319,7 @@ func traverseBoard() {
 		if loc.index < loc.edgePairList.availableNoTiles {
 			loc.tile = loc.edgePairList.tiles[loc.index].tile
 			loc.tile.rotation = loc.edgePairList.tiles[loc.index].rotationForEdgePair
-
+			loc.noTimesVisited++
 			if progress >= highestProgress {
 				fmt.Println(board)
 				highestProgress = progress
@@ -339,6 +339,7 @@ func traverseBoard() {
 			edgePairList, ok = nextPos.edgePairMap[edgePairID]
 			if ok && edgePairList.availableNoTiles > 0 { // valid edgepair list and it has tiles on it.
 				progress++
+
 				// remove the tile from the EP lists
 				loc.tile.edgePairLists[0].removeTile(loc.tile.positionInEdgePairList[0])
 				loc.tile.edgePairLists[1].removeTile(loc.tile.positionInEdgePairList[1])

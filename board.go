@@ -13,11 +13,12 @@ type BoardLocation struct {
 	up           *BoardLocation //
 	right        *BoardLocation
 	// Dynamtic parts of a location on the board
-	tile         *Tile           // pointer to current tile at
-	edgePairMap  tileEdgePairMap // this is map of all the edgepair lists valid for this location (corner, edge or normal ) this has to be like this as a corner and edge edgepair can look the same!
-	edgePairList *tileEdgePairList
-	index        int // current index in edgepair list
-	listSize     int // just used for debug, used to record the size of the edge pair list on the current location - used to show structure/progress in debug
+	tile           *Tile           // pointer to current tile at
+	edgePairMap    tileEdgePairMap // this is map of all the edgepair lists valid for this location (corner, edge or normal ) this has to be like this as a corner and edge edgepair can look the same!
+	edgePairList   *tileEdgePairList
+	index          int    // current index in edgepair list
+	listSize       int    // just used for debug, used to record the size of the edge pair list on the current location - used to show structure/progress in debug
+	noTimesVisited uint64 // number of times this location has been visited.
 }
 
 // Board : holds the description of the board and any tiles that may currently be placed apon it
@@ -68,11 +69,14 @@ func (board Board) String() string {
 	var combinations uint64
 	combinations = 1
 	s := ""
+
 	for y := range board.loc {
-		for x := range board.loc[y] {
-			loc := &board.loc[y][x]
-			s = s + fmt.Sprintf("%v ", boardLocationTypeDescription(loc.positionType))
-		}
+		/*
+			for x := range board.loc[y] {
+				loc := &board.loc[y][x]
+				s = s + fmt.Sprintf("%v ", boardLocationTypeDescription(loc.positionType))
+			}
+		*/
 		/*
 					s = s + "  "
 					for x := range board.loc[y] {
@@ -80,17 +84,19 @@ func (board Board) String() string {
 			      if loc.
 						s = s + fmt.Sprintf("%v ", tile.rotation)
 					} */
-		s = s + "  "
-		for x := range board.loc[y] {
-			loc := &board.loc[y][x]
+		/*
+			s = s + "  "
+			for x := range board.loc[y] {
+				loc := &board.loc[y][x]
 
-			if loc.tile != nil {
-				s = s + fmt.Sprintf("%2v ", loc.tile.tileNumber)
-			} else {
-				s = s + fmt.Sprintf(".  ")
+				if loc.tile != nil {
+					s = s + fmt.Sprintf("%2v ", loc.tile.tileNumber)
+				} else {
+					s = s + fmt.Sprintf(".  ")
+				}
 			}
-		}
-		s = s + "  "
+			s = s + "  "
+		*/
 		for x := range board.loc[y] {
 			loc := &board.loc[y][x]
 
@@ -98,8 +104,13 @@ func (board Board) String() string {
 				s = s + fmt.Sprintf("%2v/%2v ", loc.listSize, loc.index)
 				combinations = combinations * uint64(loc.listSize)
 			} else {
-				s = s + fmt.Sprintf(".  ")
+				s = s + fmt.Sprintf(".     ")
 			}
+		}
+		s = s + "  "
+		for x := range board.loc[y] {
+			loc := &board.loc[y][x]
+			s = s + fmt.Sprintf("%16v ", loc.noTimesVisited)
 		}
 		s = s + "\n"
 	}
