@@ -30,7 +30,7 @@ go install github.com/billtraill/e2_go
 and run using pieces files in the above link
 
 ```
-e2_go pieces_08x07.txt
+e2_go pieces_07x07.txt
 ```
 
 It outputs every time it progresses at least to where it got before or higher. Output looks like
