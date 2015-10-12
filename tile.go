@@ -4,10 +4,14 @@ import (
 	"fmt"
 	"log"
 	"time"
+
+	"github.com/davidminor/uint128"
 )
 
 type edgePairID int
 type side int
+
+//type compSideType [2]int // TODO factor into normal side ....
 type tileArray []*Tile
 
 // Tile : Holds all the  attributes of a tile
@@ -20,9 +24,17 @@ type Tile struct {
 	duplicateEdgePairs bool                 // flag to indicate if there are duplicate Edge Pairs it means for these tiles we cannot manage their edge pair lists concurrently
 	edgePairs          [4]edgePairID        // Four edge pairs, adjacent edges
 	edgePairLists      [4]*tileEdgePairList // note order of list implies the rotation of the tile from its normalised positon
+
 	// dynamic values .... these get changed as we run ....
 	positionInEdgePairList [4]int // this tracks where the tile is currently in the edgePairLists - this changes as we remove/add tiles to lists
 	rotation               int
+	// Compisite tile
+	composite      bool // is this a composite tile made up of other tiles 2x2 currently ..
+	cTiles         [4]*Tile
+	cTileRotations [4]int
+	cTileUsed      uint128.Uint128 // bit mask for each tile no used in this composite.
+
+	//cTileSides [4]compSideType
 }
 
 func tileTypeDescription(t byte) string {
@@ -44,21 +56,22 @@ func tileTypeDescription(t byte) string {
 // tileLine is used by boardshowTilesPlaced, it is designed to show a printed representation of a tile over 3 lines.
 // It returns a string for each line for a tile requested, showing its current rotation on the board
 func (tile *Tile) tileLine(line int) string {
+
 	s := ""
 	if tile == nil {
 		s = "      "
 	} else if line == 0 {
-		s = fmt.Sprintf("   %2v    ", tile.sides[(tile.rotation+1)%4])
+		s = fmt.Sprintf("     %04x      ", tile.sides[(tile.rotation+1)%4])
 	} else if line == 1 {
-		s = fmt.Sprintf("%2v %2v %2v ", tile.sides[(tile.rotation)%4], tile.tileNumber, tile.sides[(tile.rotation+2)%4])
+		s = fmt.Sprintf("%04x %4v %04x ", tile.sides[(tile.rotation)%4], tile.tileNumber, tile.sides[(tile.rotation+2)%4])
 	} else if line == 2 {
-		s = fmt.Sprintf("   %2v    ", tile.sides[(tile.rotation+3)%4])
+		s = fmt.Sprintf("     %04x      ", tile.sides[(tile.rotation+3)%4])
 	}
 	return s
 }
 
-const tileEdgePairShift = 5   // This will allow 5 bits of information for the edge colour ... if more than 2^5 edge types then increase this
-const tileEdgePairMask = 0x1F // 5 bits worth
+const tileEdgePairShift = 16    // This will allow 16 bits of information for the edge colour ... if more than 2^5 edge types then increase this
+const tileEdgePairMask = 0xFFFF // 16 bits worth
 
 func edgePairDescription(egdePair edgePairID) string {
 	a := egdePair >> tileEdgePairShift
@@ -83,8 +96,21 @@ func (tiles tileArray) String() string {
 }
 
 func (tile Tile) String() string {
+	if tile.composite {
+		s := "("
+		for i := range tile.cTiles {
+			s = s + fmt.Sprintf("%v ", tile.cTiles[i].tileNumber)
+		}
+		s = s + ")"
+		for i := range tile.sides {
+			s = s + fmt.Sprintf("(%v %v) ", tile.sides[i]>>8, tile.sides[i]&255)
+		}
+		s = s + fmt.Sprintf("%b", tile.cTileUsed)
+		return s
+	}
 	return fmt.Sprintf("Tile No:%v  %v Sides:%v EdgePairs:%v PositionInEPList:%v",
 		tile.tileNumber, tileTypeDescription(tile.tileType), tile.sides, edgePairsDescription(tile.edgePairs), tile.positionInEdgePairList)
+
 }
 
 // int EPid = createEPId(nodes[nodeId].sides[s],nodes[nodeId].sides[(s+1)%4]);
@@ -94,23 +120,25 @@ func calcEdgePairID(e1 side, e2 side) edgePairID {
 	return edgePairID((int(e1) << tileEdgePairShift) + int(e2)) // stricly speaking we shoud mask e2 but assuming that shift is big enough
 }
 
+func calcCompositeEdgePairID(e1 side, e2 side) edgePairID {
+
+	return edgePairID((int(e1) << tileEdgePairShift) + int(e2)) // stricly speaking we shoud mask e2 but assuming that shift is big enough
+}
+
 func (tile *Tile) setEdgePairs() {
 	for i := range tile.sides {
 		tile.edgePairs[i] = calcEdgePairID(tile.sides[i], tile.sides[(i+1)%4])
 	}
+
 	// Just a bit of information
-	tile.duplicateEdgePairs = false
-	for i := range tile.edgePairs {
-		for j := range tile.edgePairs {
-			if i != j {
-				if tile.edgePairs[i] == tile.edgePairs[j] {
-					tile.duplicateEdgePairs = true
-					fmt.Println("Tile:", tile.tileNumber, "Has duplicate edgepairs!")
-				}
-			}
+	if tile.edgePairs[0] == tile.edgePairs[2] && tile.edgePairs[1] == tile.edgePairs[3] {
+		tile.duplicateEdgePairs = true
+		if tile.edgePairs[0] == tile.edgePairs[1] {
+			fmt.Println("Tile:", tile.tileNumber, "all sies are the same!", tile.sides, tile.edgePairs)
+		} else {
+			fmt.Println("Tile:", tile.tileNumber, "Has rotational symetery!", tile.sides, tile.edgePairs)
 		}
 	}
-	//tile.duplicateEdgePairs = true
 }
 
 // normaliseEdges normalises the tile so the border edges are first in the array
@@ -369,6 +397,111 @@ func traverseBoard() {
 			//loc.tile = nil // probably not required but handy, used when we print out progress ...
 			loc.index++
 
+		}
+	}
+
+	fmt.Println("Number of iterations to solution:", numberInterations)
+}
+
+// generateValidTileIndexes returns valid indexes from the edgePair list associated with the given location on the board.
+// It checks that any composite tile in the list has not had any of its subtiles already placed. The cTilePlaced passed to it
+// has a track of current subtiles placed in it.
+// It returns valid indexs on the return channel associated with this location.
+// when returns a negaitve index when the list has been exhasuted.
+func generateValidTileIndexes(loc *BoardLocation, cTilePlaced uint128.Uint128) {
+	if cTilePlaced.Or(loc.edgePairList.cTilePresent) != cTilePlaced { // check that there are 'new' tiles in the list that have not already been placed on the board. May not be worth doing this step....
+		for i := 0; i < loc.edgePairList.availableNoTiles; i++ {
+			t := loc.edgePairList.tiles[i].tile.cTileUsed.And(cTilePlaced)
+			if t.H == 0 && t.L == 0 {
+				if loc.traverseNext != nil { // cannot check ahead if we are at end of the board!
+					// this should work ... and catch the case where we traverse onto next line!
+					edgePairID := loc.traverseNext.getCompositeEdgePairIDForLocationAssumingGivenTileIsOnLeft(loc.edgePairList.tiles[i].tile, loc.edgePairList.tiles[i].rotationForEdgePair)
+					//edgePairList, ok := loc.right.edgePairMap[edgePairID]
+					_, ok := loc.traverseNext.edgePairMap[edgePairID]
+					if ok { // check there is a list
+						// TODO we could return the edgePairList ! since we have it above !! ?? but might not be easy...
+						loc.edgePairChan <- i
+					}
+				} else {
+					loc.edgePairChan <- i
+				}
+
+			}
+		}
+	}
+	loc.edgePairChan <- -1 // at end of list, nothing else to try in this list.
+}
+
+func traverseCompositeBoard() {
+	var nextPos *BoardLocation
+	var loc *BoardLocation
+	var edgePairID edgePairID
+	var progress int
+	var edgePairList *tileEdgePairList
+	var ok bool
+	var numberInterations uint64
+
+	var highestProgress int
+	//var i int
+
+	// need to have current location set to 1st tile to start TODO
+	loc = &board.loc[0][0]
+	loc.edgePairList = loc.edgePairMap[calcCompositeEdgePairID(0, 0)]
+	loc.index = 0
+	loc.listSize = loc.edgePairList.availableNoTiles
+	go generateValidTileIndexes(loc, board.cTilePlaced)
+
+	progress = 0
+	highestProgress = 0
+
+	for {
+		numberInterations++
+		// are there still tiles left to try in the edge pair list on the current location
+		i := <-loc.edgePairChan
+		if i >= 0 {
+			loc.index = i
+			loc.tile = loc.edgePairList.tiles[loc.index].tile
+			loc.tile.rotation = loc.edgePairList.tiles[loc.index].rotationForEdgePair
+
+			loc.noTimesVisited++
+			if progress >= highestProgress {
+				fmt.Println(board)
+				highestProgress = progress
+				fmt.Printf("%b %b\n", board.cTilePlaced.H, board.cTilePlaced.L)
+				fmt.Println("Placed:", progress, time.Now().Format(time.RFC850))
+				fmt.Println("Number of iterations:", numberInterations)
+				if progress == (board.width*board.height)-1 {
+					fmt.Println(board)
+					fmt.Println("finished solution ") // TODO Print out proper solution
+					fmt.Printf("Progress %v  %b %b\n", progress, board.cTilePlaced.H, board.cTilePlaced.L)
+					break
+				}
+			}
+
+			// Now see if there is a valid EP in next location
+			nextPos = loc.traverseNext
+			edgePairID = nextPos.getCompositeEdgePairIDForLocation()
+
+			edgePairList, ok = nextPos.edgePairMap[edgePairID]
+			if ok { // check there is a list
+				progress++
+				board.cTilePlaced = board.cTilePlaced.Add(loc.tile.cTileUsed) // set all the bit that are used
+				//fmt.Printf("Progress %v  %b %b\n", progress, board.cTilePlaced.H, board.cTilePlaced.L)
+
+				// move to next position on board
+				nextPos.edgePairList = edgePairList
+				//nextPos.index = 0                                // not really required for coroutine version
+				nextPos.listSize = edgePairList.availableNoTiles // just for debug
+				loc = nextPos                                    // move to the next location
+				go generateValidTileIndexes(loc, board.cTilePlaced)
+			}
+		} else {
+			// backtrack
+			progress--
+			// traverse to previous tile
+			loc = loc.traversePrev
+			// remove the subtiles placed by the tile at the position we are backtracking to
+			board.cTilePlaced = board.cTilePlaced.Xor(loc.tile.cTileUsed) // this should undo things !
 		}
 	}
 

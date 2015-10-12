@@ -18,7 +18,7 @@ One my system
 
 One of the  problems with this puzzle is that the more constraints you add, the slower it runs and the cost/benifit is not always clear! This version runs with the minumum of constraint checks.
 
-I tried various attempts at using go routines for concurrancy but ended up removing most/all of this at it didn't make things any faster (most of my attempt made it slower infact). 
+I tried various attempts at using go routines for concurrancy but ended up removing most/all of this at it didn't make things any faster (most of my attempt made it slower infact). However the -comp method does use coroutines that for composite 2x2 tiles does make things slightly faster.
 
 There is no restictions/license in using any of the code here. Use it as you wish. Its probably not very well written since it was a learning exercise. 
 
@@ -84,3 +84,18 @@ The numbers top left are the size of edge pair list in that position on the boar
 The current number of combinations is basically an estimate of what it would take to traverse the complete solution space (it is the lenght of the current edge pair lists multiplied together). Its not accurate in anyway it just gives a lose idea of the size of the search space to be traversed.
 
 Number of iterations is the number of times we went round the search loop (aprox total no of times a location was visited).
+
+By default the method used for solution is iteratively, you can also call it with 
+```
+e2_go -method recursive pieces_07x07.txt
+``` 
+which will run using a recusive method. The iterative one is slightly faster but the method is essentially the same.
+
+One other way to run is by 
+
+```
+e2_go -comp  pieces_06x06.txt
+```
+which solves by creating all possible 2x2 tiles and places thoes on the board. It also uses coroutines and channels in go to try and do some things in parallel. This method only works with even sized boarders.
+
+

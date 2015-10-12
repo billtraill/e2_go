@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"log"
 	"sort"
+
+	"github.com/davidminor/uint128"
 )
 
-const maxEdgePairListSize = 20 // Probably only 17
+const maxEdgePairListSize = 600 // Probably only 17
 
 // tileEdgePairList an list that refers to each tile with a given edgePairID
 type tileEdgePairList struct { // equiv to EPListType
@@ -19,6 +21,7 @@ type tileEdgePairList struct { // equiv to EPListType
 	//removeChan         chan int
 	//restoreChan        chan int
 	//responseChan       chan int
+	cTilePresent uint128.Uint128 // bit mask for each tile present in this list
 }
 type tileAndRotation struct {
 	tile                            *Tile
@@ -51,7 +54,7 @@ func (m tileEdgePairMap) String() string {
 
 func (edgePairList *tileEdgePairList) String() string {
 
-	s := fmt.Sprintf("%v: %v %v (", edgePairDescription(edgePairList.edgePairID), tileTypeDescription(edgePairList.tileType), edgePairList.availableNoTiles)
+	s := fmt.Sprintf("%v: %v Size:%v (", edgePairDescription(edgePairList.edgePairID), tileTypeDescription(edgePairList.tileType), edgePairList.availableNoTiles)
 	for i := 0; i < edgePairList.availableNoTiles; i++ {
 		s = s + fmt.Sprintf("t%v r%v i%v,", edgePairList.tiles[i].tile.tileNumber, edgePairList.tiles[i].rotationForEdgePair, edgePairList.tiles[i].tilepositionInEdgePairListIndex)
 	}
@@ -67,7 +70,9 @@ func (edgePairList *tileEdgePairList) String() string {
 // rotations 0..3 match the position in the array 0..3
 func (edgePairList *tileEdgePairList) addTile(tile *Tile, tileRotation int) {
 	var tileAndRotation tileAndRotation
-
+	if edgePairList.totalNoTilesInList == maxEdgePairListSize {
+		log.Fatalln("Exceeded static edgePair list size", maxEdgePairListSize, tile)
+	}
 	tileAndRotation.tilepositionInEdgePairListIndex = tileRotation
 
 	tileAndRotation.tile = tile
@@ -82,6 +87,8 @@ func (edgePairList *tileEdgePairList) addTile(tile *Tile, tileRotation int) {
 
 	edgePairList.totalNoTilesInList++
 	edgePairList.availableNoTiles = edgePairList.totalNoTilesInList
+
+	edgePairList.cTilePresent = edgePairList.cTilePresent.Or(tile.cTileUsed) // track the primitive tiles present in list
 }
 
 //var swapTile *tileAndRotation

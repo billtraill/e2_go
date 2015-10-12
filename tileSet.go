@@ -6,12 +6,17 @@ import "fmt"
 // gets initialised once and no further changes done to it.
 // Also gets validated for types, numbers etc
 type TileSet struct {
-	width                 int
-	height                int
-	cornerTiles           []*Tile
-	edgeTiles             []*Tile
-	normalTiles           []*Tile
-	allTiles              []*Tile // we probably just need this one and its associated map
+	width       int
+	height      int
+	cornerTiles tileArray
+	edgeTiles   tileArray
+	normalTiles tileArray
+	allTiles    tileArray // we probably just need this one and its associated map
+
+	compositCornerTiles tileArray
+	compositEdgeTiles   tileArray
+	compositNormalTiles tileArray
+
 	numberOfEdgeColours   int
 	numberOfNormalColours int
 	//tilesEdgePairMap      tileEdgePairMap // maybe we can just getaway with one map? as boarder colours don't apear on normal tiles!
@@ -21,9 +26,22 @@ type TileSet struct {
 	//responseChan            chan int // used to respond to completion notices....
 }
 
+func (tileSet *TileSet) String() string {
+	s := ""
+	s = s + fmt.Sprintln("All tiles:")
+	s = s + fmt.Sprintln(tileSet.allTiles)
+	s = s + fmt.Sprintln("Corner list:")
+	s = s + fmt.Sprintln(tileSet.cornerTiles)
+	s = s + fmt.Sprintln("Edge list:")
+	s = s + fmt.Sprintln(tileSet.edgeTiles)
+	s = s + fmt.Sprintln("Normal list:")
+	s = s + fmt.Sprintln(tileSet.normalTiles)
+	return s
+}
+
 // setUpTileSet takes width and height of a board and a set of tiles to cover the board and populates
 // the given tileSet
-func (tileSet *TileSet) setUpTileSet(width int, height int, tiles tileArray) (err error) {
+func (tileSet *TileSet) setUpTileSet(width int, height int, tiles tileArray, composite bool) (err error) {
 	tileSet.width = width
 	tileSet.height = height
 	tileSet.cornerTiles = nil
@@ -49,22 +67,18 @@ func (tileSet *TileSet) setUpTileSet(width int, height int, tiles tileArray) (er
 	if err != nil {
 		return err
 	}
-	//tileSet.responseChan = make(chan int, 4) // we expect only 4 responses at a time (1 for each edgepair list)
-	// Setup edgePairsmaps
-	//tileSet.tilesEdgePairMap = createEdgePairLists(tileSet.allTiles)
-	//fmt.Println(tileSet.tilesEdgePairMap)
-	tileSet.cornerTilesEdgePairsMap = createEdgePairLists(tileSet.cornerTiles, 'C')
-	//fmt.Println("Corner list:")
-	//fmt.Println(tileSet.cornerTilesEdgePairsMap)
-	tileSet.edgeTilesEdgePairsMap = createEdgePairLists(tileSet.edgeTiles, 'E')
-	//fmt.Println("Edge list:")
-	//fmt.Println(tileSet.edgeTilesEdgePairsMap)
-	tileSet.normalTilesEdgePairsMap = createEdgePairLists(tileSet.normalTiles, 'N')
-	//fmt.Println("Normal list:")
-	//fmt.Println(tileSet.normalTilesEdgePairsMap)
-	//fmt.Println(tiles)
-	// HERE TODO need to add functions to add/remove entries from the lists. Use array as small linked list! swaping used elements to end of list!
-	// to implement forward reservation of EP entries and constrain on count of available!
+	if composite {
+		generateTileCombinations()
+		tileSet.cornerTilesEdgePairsMap = createEdgePairLists(tileSet.compositCornerTiles, 'C')
+		tileSet.edgeTilesEdgePairsMap = createEdgePairLists(tileSet.compositEdgeTiles, 'E')
+		tileSet.normalTilesEdgePairsMap = createEdgePairLists(tileSet.compositNormalTiles, 'N')
+		//fmt.Println("normalTilesEdgePairList", tileSet.normalTilesEdgePairsMap)
+	} else {
+		tileSet.cornerTilesEdgePairsMap = createEdgePairLists(tileSet.cornerTiles, 'C')
+		tileSet.edgeTilesEdgePairsMap = createEdgePairLists(tileSet.edgeTiles, 'E')
+		tileSet.normalTilesEdgePairsMap = createEdgePairLists(tileSet.normalTiles, 'N')
+	}
+
 	return nil
 }
 

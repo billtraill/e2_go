@@ -1,6 +1,10 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/davidminor/uint128"
+)
 
 // BoardLocation : describes the position of location on the board and what is currently at that location
 type BoardLocation struct {
@@ -19,12 +23,16 @@ type BoardLocation struct {
 	index          int    // current index in edgepair list
 	listSize       int    // just used for debug, used to record the size of the edge pair list on the current location - used to show structure/progress in debug
 	noTimesVisited uint64 // number of times this location has been visited.
+
+	// used for conposite board traversal coroutine of get next edge pair
+	edgePairChan chan int
 }
 
 // Board : holds the description of the board and any tiles that may currently be placed apon it
 type Board struct {
 	loc           [][]BoardLocation
 	width, height int
+	cTilePlaced   uint128.Uint128 // Tracks which tiles have been placed on compisite board
 }
 
 // boardLocationTypeDescription for a given position type returns a string "describing" that position.
@@ -71,12 +79,12 @@ func (board Board) String() string {
 	s := ""
 
 	for y := range board.loc {
-		/*
-			for x := range board.loc[y] {
-				loc := &board.loc[y][x]
-				s = s + fmt.Sprintf("%v ", boardLocationTypeDescription(loc.positionType))
-			}
-		*/
+
+		for x := range board.loc[y] {
+			loc := &board.loc[y][x]
+			s = s + fmt.Sprintf("%v ", boardLocationTypeDescription(loc.positionType))
+		}
+
 		/*
 					s = s + "  "
 					for x := range board.loc[y] {
@@ -101,10 +109,10 @@ func (board Board) String() string {
 			loc := &board.loc[y][x]
 
 			if loc.tile != nil {
-				s = s + fmt.Sprintf("%2v/%2v ", loc.listSize, loc.index)
+				s = s + fmt.Sprintf("%3v/%3v ", loc.listSize, loc.index)
 				combinations = combinations * uint64(loc.listSize)
 			} else {
-				s = s + fmt.Sprintf(".     ")
+				s = s + fmt.Sprintf(".       ")
 			}
 		}
 		s = s + "  "
@@ -170,7 +178,7 @@ func (board Board) setRowByRowTraversal() {
 	xp, yp := 0, 0
 	x, y := 1, 0
 	for {
-		fmt.Println(x, y)
+		//fmt.Println(x, y)
 		board.loc[yp][xp].traverseNext = &board.loc[y][x]
 		board.loc[y][x].traversePrev = &board.loc[yp][xp]
 		xp, yp = x, y
@@ -192,21 +200,25 @@ func (board Board) setTraversal() {
 	board.setRowByRowTraversal()
 }
 
-func (board *Board) createBoard(tileSet TileSet) error {
-	board.width = tileSet.width
-	board.height = tileSet.height
-	board.loc = make([][]BoardLocation, tileSet.height)
+func (board *Board) createBoard(tileSet TileSet, width int, height int) error {
+	fmt.Println("createBoard: Board size", width, height)
+	board.width = width
+	board.height = height
+	board.loc = make([][]BoardLocation, board.height)
 	// loop over the rows allocating the slice for each row
 	for y := range board.loc {
-		board.loc[y] = make([]BoardLocation, tileSet.width)
+		board.loc[y] = make([]BoardLocation, board.width)
 	}
 	// Set position types
 	for y := range board.loc {
 		for x := range board.loc[y] {
+			//fmt.Println("createBoard: setting up point", x, y)
 			loc := &board.loc[y][x]
 			loc.x = x // not really used for much
 			loc.y = y
-			if x == 0 && y == 0 { // top left
+			// create channels for each location, used by compisite board traversal to get get valid tile/rotation for a location.
+			board.loc[y][x].edgePairChan = make(chan int, 100) // just a guess at size
+			if x == 0 && y == 0 {                              // top left
 				loc.positionType = 'C'
 				loc.edgePairMap = tileSet.cornerTilesEdgePairsMap
 				loc.left = nil
@@ -214,7 +226,7 @@ func (board *Board) createBoard(tileSet TileSet) error {
 				loc.right = &board.loc[y][x+1]
 				loc.down = &board.loc[y+1][x]
 
-			} else if x == 0 && y == tileSet.height-1 { // bottom left
+			} else if x == 0 && y == board.height-1 { // bottom left
 				loc.positionType = 'C'
 				loc.edgePairMap = tileSet.cornerTilesEdgePairsMap
 
@@ -222,7 +234,7 @@ func (board *Board) createBoard(tileSet TileSet) error {
 				loc.up = &board.loc[y-1][x]
 				loc.right = &board.loc[y][x+1]
 				loc.down = nil
-			} else if x == tileSet.width-1 && y == 0 { // top right
+			} else if x == board.width-1 && y == 0 { // top right
 				loc.positionType = 'C'
 				loc.edgePairMap = tileSet.cornerTilesEdgePairsMap
 
@@ -230,7 +242,7 @@ func (board *Board) createBoard(tileSet TileSet) error {
 				loc.up = nil
 				loc.right = nil
 				loc.down = &board.loc[y+1][x]
-			} else if x == tileSet.width-1 && y == tileSet.height-1 { // bottom right
+			} else if x == board.width-1 && y == board.height-1 { // bottom right
 				loc.positionType = 'C'
 				loc.edgePairMap = tileSet.cornerTilesEdgePairsMap
 
@@ -248,7 +260,7 @@ func (board *Board) createBoard(tileSet TileSet) error {
 				loc.right = &board.loc[y][x+1]
 				loc.down = &board.loc[y+1][x]
 
-			} else if x == tileSet.width-1 { // right edge of board
+			} else if x == board.width-1 { // right edge of board
 				loc.positionType = 'E'
 				loc.edgePairMap = tileSet.edgeTilesEdgePairsMap
 
@@ -265,7 +277,7 @@ func (board *Board) createBoard(tileSet TileSet) error {
 				loc.up = nil
 				loc.right = &board.loc[y][x+1]
 				loc.down = &board.loc[y+1][x]
-			} else if y == tileSet.height-1 { // bottom  edge of board
+			} else if y == board.height-1 { // bottom  edge of board
 				loc.positionType = 'E'
 				loc.edgePairMap = tileSet.edgeTilesEdgePairsMap
 
@@ -299,6 +311,40 @@ func (loc *BoardLocation) getEdgePairIDForLocation() edgePairID {
 		b = 0
 	} else {
 		b = loc.up.tile.sides[(loc.up.tile.rotation+3)%4]
+	}
+	return calcEdgePairID(a, b)
+}
+
+func (loc *BoardLocation) getCompositeEdgePairIDForLocation() edgePairID {
+	var a, b side
+	if loc.left == nil {
+		a = 0
+	} else {
+		a = loc.left.tile.sides[(loc.left.tile.rotation+2)%4] // OK
+		a = cTileSideSwap(a)
+	}
+	if loc.up == nil {
+		b = 0
+	} else {
+		b = loc.up.tile.sides[(loc.up.tile.rotation+3)%4]
+		b = cTileSideSwap(b)
+	}
+	return calcEdgePairID(a, b)
+}
+
+func (loc *BoardLocation) getCompositeEdgePairIDForLocationAssumingGivenTileIsOnLeft(tile *Tile, rotation int) edgePairID {
+	var a, b side
+	if loc.left == nil {
+		a = 0
+	} else {
+		a = tile.sides[(rotation+2)%4] // OK
+		a = cTileSideSwap(a)
+	}
+	if loc.up == nil {
+		b = 0
+	} else {
+		b = loc.up.tile.sides[(loc.up.tile.rotation+3)%4]
+		b = cTileSideSwap(b)
 	}
 	return calcEdgePairID(a, b)
 }

@@ -47,7 +47,6 @@ func readTilesFromFile(fileName string) (width int, height int, tiles tileArray,
 			newTile.tileNumber = tileNumber
 
 			//fmt.Println(newTile)
-			// TODO: tileType, edgePairs etc
 			newTile.setTileProperties()
 			tiles = append(tiles, newTilep)
 			tileNumber++
@@ -56,7 +55,7 @@ func readTilesFromFile(fileName string) (width int, height int, tiles tileArray,
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println(tiles)
+	//fmt.Println(tiles)
 	//for _, v := range tiles {
 	//	fmt.Println(v)
 	//}
