@@ -321,6 +321,8 @@ func (loc *BoardLocation) placeTileOnBoard(progress int) bool {
 	return false
 }
 
+// traverseBoard is the standard recursive method of traversing the board and backtracking.
+//
 func traverseBoard() {
 	var nextPos *BoardLocation
 	var loc *BoardLocation
@@ -432,6 +434,10 @@ func generateValidTileIndexes(loc *BoardLocation, cTilePlaced uint128.Uint128) {
 	loc.edgePairChan <- -1 // at end of list, nothing else to try in this list.
 }
 
+// traverseCompositeBoard uses composite 2x2 tiles to build up a solution.
+// It does this using generateValidTileIndexes as a coroutine that gets the indexes
+// of all valid tiles in the edge pair list for a given location. This does give
+// a slight performance improvement.
 func traverseCompositeBoard() {
 	var nextPos *BoardLocation
 	var loc *BoardLocation
@@ -444,7 +450,7 @@ func traverseCompositeBoard() {
 	var highestProgress int
 	//var i int
 
-	// need to have current location set to 1st tile to start TODO
+	// need to have current location set to 1st tile to start
 	loc = &board.loc[0][0]
 	loc.edgePairList = loc.edgePairMap[calcCompositeEdgePairID(0, 0)]
 	loc.index = 0
