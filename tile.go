@@ -321,7 +321,7 @@ func (loc *BoardLocation) placeTileOnBoard(progress int) bool {
 	return false
 }
 
-// traverseBoard is the standard recursive method of traversing the board and backtracking.
+// traverseBoard is the standard iterative method of traversing the board and backtracking.
 //
 func traverseBoard() {
 	var nextPos *BoardLocation

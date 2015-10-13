@@ -84,6 +84,13 @@ func (board Board) String() string {
 			loc := &board.loc[y][x]
 			s = s + fmt.Sprintf("%v ", boardLocationTypeDescription(loc.positionType))
 		}
+		// see the length of the current channels ... note this might not be a very
+		// fair picture as the act of printing something probably give a chance for
+		// the coroutines to run a bit more ...
+		for x := range board.loc[y] {
+			loc := &board.loc[y][x]
+			s = s + fmt.Sprintf("%3v ", len(loc.edgePairChan))
+		}
 
 		/*
 					s = s + "  "
